@@ -8,7 +8,7 @@ import random
 import time
 from hand_gesture import HandGestureDetector
 from game_engine import GameEngine, GameState
-from highscore import add_score, get_high_score, get_scores
+from highscore import add_score, get_high_score, get_scores, get_total_games
 
 
 class FingerGunDuckHunter:
@@ -406,6 +406,12 @@ class FingerGunDuckHunter:
         version = self.hint_font.render("v1.0.0", True, (150, 150, 150))
         ver_rect = version.get_rect(center=(self.SCREEN_WIDTH // 2, 235))
         self.screen.blit(version, ver_rect)
+
+        total = get_total_games()
+        if total > 0:
+            total_text = self.hint_font.render(f"{total} games played", True, (120, 120, 120))
+            total_rect = total_text.get_rect(center=(self.SCREEN_WIDTH // 2, 255))
+            self.screen.blit(total_text, total_rect)
 
         # High score
         high = get_high_score()

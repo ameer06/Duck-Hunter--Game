@@ -35,6 +35,11 @@ def get_high_score():
     return scores[0]["score"] if scores else 0
 
 
+def get_total_games():
+    """Return how many games have been recorded in the leaderboard."""
+    return len(_load())
+
+
 def add_score(score, accuracy, ducks_shot):
     if not isinstance(score, (int, float)) or score < 0:
         return get_scores()

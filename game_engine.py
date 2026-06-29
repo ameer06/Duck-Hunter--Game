@@ -309,6 +309,11 @@ class GameEngine:
         self.last_spawn_time = time.time()
         self.spawn_interval = 2.0
 
+        # Level / difficulty
+        self.level = 1
+        self.ducks_per_level = 8
+        self.ducks_hit_this_level = 0
+
         # Trees & environment
         self.trees = []
         self.background = None
@@ -386,6 +391,8 @@ class GameEngine:
         """Spawn a new animated duck"""
         if len(self.ducks) < self.max_ducks:
             new_duck = Duck(self.screen_width, self.screen_height, self.duck_frames)
+            # Scale speed with level
+            new_duck.speed *= (1 + (self.level - 1) * 0.12)
             self.ducks.append(new_duck)
             self.last_spawn_time = time.time()
             # Quack on spawn
@@ -487,6 +494,11 @@ class GameEngine:
             points = int(100 * self.combo_multiplier)
             self.score += points
 
+            # Track ducks hit for level progression
+            self.ducks_hit_this_level += 1
+            if self.ducks_hit_this_level >= self.ducks_per_level:
+                self._advance_level()
+
             # Floating score text at hit position
             score_color = (255, 215, 0) if self.combo_multiplier > 1 else (255, 255, 255)
             self.floating_texts.append(
@@ -532,6 +544,38 @@ class GameEngine:
             self.consecutive_hits = 0
             self.combo_multiplier = 1.0
             return False
+
+    def _advance_level(self):
+        """Increase difficulty when enough ducks have been hit."""
+        self.level += 1
+        self.ducks_hit_this_level = 0
+        self.ammo = min(self.ammo + 5, 20)  # bonus ammo on level up
+
+        # Scale difficulty
+        self.max_ducks = min(3 + self.level, 8)
+        self.spawn_interval = max(2.0 - self.level * 0.15, 0.8)
+
+        # Announce
+        self.floating_texts.append(
+            FloatingText(
+                f"LEVEL {self.level}!",
+                self.screen_width // 2,
+                self.screen_height // 3,
+                color=(0, 255, 200),
+                size=72,
+                duration=2.0,
+            )
+        )
+        self.floating_texts.append(
+            FloatingText(
+                f"+5 AMMO BONUS",
+                self.screen_width // 2,
+                self.screen_height // 3 + 60,
+                color=(255, 215, 0),
+                size=40,
+                duration=1.5,
+            )
+        )
 
     def get_accuracy(self):
         if self.shots_fired == 0:
@@ -610,6 +654,10 @@ class GameEngine:
             combo_text = font.render(f"COMBO x{self.combo_multiplier:.1f}", True, (255, 215, 0))
             screen.blit(combo_text, (20, 125))
 
+        # Level
+        level_text = font.render(f"LEVEL: {self.level}", True, (0, 255, 200))
+        screen.blit(level_text, (20, 160))
+
     def draw_effects(self, screen, crosshair_pos):
         """Draw visual effects"""
         if self.shot_flash:
@@ -650,6 +698,10 @@ class GameEngine:
         self.hits = 0
         self.consecutive_hits = 0
         self.combo_multiplier = 1.0
+        self.level = 1
+        self.ducks_hit_this_level = 0
+        self.max_ducks = 3
+        self.spawn_interval = 2.0
         self.ducks.clear()
         self.particles.clear()
         self.floating_texts.clear()

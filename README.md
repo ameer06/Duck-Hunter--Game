@@ -16,7 +16,7 @@ This project uses computer vision to detect hand gestures and lets you shoot duc
 ```
 opencv-python
 mediapipe
-pygame-ce
+pygame
 numpy
 ```
 
@@ -35,8 +35,13 @@ python main.py
 ## Controls
 - **Hand Gesture**: Make finger gun pose to aim
 - **Thumb Motion**: Quick down-up motion to shoot
+- **SPACE**: Start game from menu
+- **P Key**: Pause / Resume
 - **W Key**: Toggle webcam preview
+- **M Key**: Mute / Unmute background music
+- **C Key**: Cycle camera (if webcam not working)
 - **F Key**: Show/hide FPS
+- **R Key**: Restart (on game over screen)
 - **ESC**: Quit game
 
 ## Tips
@@ -47,9 +52,14 @@ python main.py
 
 ## Game Features
 - Hand tracking using MediaPipe
+- Main menu screen with controls guide
 - Score tracking and accuracy stats
+- High score persistence (top 5 scores saved)
+- Difficulty progression with leveling system
 - Combo multipliers for consecutive hits
-- Visual effects (muzzle flash, recoil)
+- Visual effects (muzzle flash, recoil, feather particles)
+- Streak announcements (Double Kill, Triple Kill, etc.)
+- Pause/resume support
 - Hit detection radius of 180px (pretty forgiving!)
 
 ## Project Structure
@@ -57,10 +67,12 @@ python main.py
 duck hunter/
 ├── main.py              # Main game loop
 ├── hand_gesture.py      # Hand detection logic
-├── game_engine.py       # Duck behavior and scoring
+├── game_engine.py       # Duck behavior, scoring, and levels
+├── highscore.py         # High score persistence
 ├── generate_assets.py   # Creates fallback game assets
 ├── requirements.txt     # Dependencies
-└── assets/              # Game sprites (duck, background, crosshair)
+├── assets/              # Game sprites (duck, background, crosshair)
+└── test_hand.py         # Quick hand detection test
 ```
 
 ## Troubleshooting

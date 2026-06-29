@@ -8,6 +8,7 @@ import sys
 import numpy as np
 from hand_gesture import HandGestureDetector
 from game_engine import GameEngine, GameState
+from highscore import add_score, get_high_score, get_scores
 
 
 class FingerGunDuckHunter:
@@ -43,6 +44,7 @@ class FingerGunDuckHunter:
         
         # game logic handler
         self.game_engine = GameEngine(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+        self.game_engine.state = GameState.MENU
         self.game_engine.load_duck_frames(self.duck_frames)
         self.game_engine.load_scene(self.background, self.tree_images, self.grass_fg)
 
@@ -58,6 +60,7 @@ class FingerGunDuckHunter:
         self.running = True
         self.show_webcam = True  # press W to toggle
         self.show_fps = True
+        self._game_over_scored = False
         
     def load_assets(self):
         """Load game assets – sounds and visuals loaded independently"""
@@ -280,11 +283,65 @@ class FingerGunDuckHunter:
         )
         hits_rect = hits_text.get_rect(center=(self.SCREEN_WIDTH // 2, 400))
         self.screen.blit(hits_text, hits_rect)
+
+        # High score
+        high = get_high_score()
+        if high > 0:
+            hs_text = self.font.render(f"High Score: {high}", True, (255, 215, 0))
+            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 450))
+            self.screen.blit(hs_text, hs_rect)
         
         # Instructions
         restart_text = self.font.render("Press R to Restart or ESC to Quit", True, (255, 215, 0))
-        restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 500))
+        restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 530))
         self.screen.blit(restart_text, restart_rect)
+
+    def draw_menu_screen(self):
+        """Draw main menu screen"""
+        if self.background:
+            self.screen.blit(self.background, (0, 0))
+        else:
+            self.screen.fill((135, 206, 235))
+
+        overlay = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        overlay.set_alpha(160)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+
+        # Title
+        title = self.title_font.render("DUCK HUNTER", True, (255, 215, 0))
+        title_rect = title.get_rect(center=(self.SCREEN_WIDTH // 2, 140))
+        self.screen.blit(title, title_rect)
+
+        subtitle = self.font.render("Finger Gun Edition", True, (255, 255, 255))
+        sub_rect = subtitle.get_rect(center=(self.SCREEN_WIDTH // 2, 200))
+        self.screen.blit(subtitle, sub_rect)
+
+        # High score
+        high = get_high_score()
+        if high > 0:
+            hs_text = self.font.render(f"High Score: {high}", True, (255, 215, 0))
+            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 250))
+            self.screen.blit(hs_text, hs_rect)
+
+        # Controls
+        controls = [
+            "Make a finger gun pose to aim",
+            "Quick thumb down-up motion to shoot",
+            "",
+            "P - Pause    W - Webcam    M - Mute",
+            "F - FPS      C - Camera    ESC - Quit",
+        ]
+        for i, line in enumerate(controls):
+            color = (200, 200, 200) if line else (200, 200, 200)
+            text = self.font.render(line, True, color)
+            rect = text.get_rect(center=(self.SCREEN_WIDTH // 2, 320 + i * 35))
+            self.screen.blit(text, rect)
+
+        # Start prompt
+        start_text = self.font.render("Press SPACE to Start", True, (255, 255, 0))
+        start_rect = start_text.get_rect(center=(self.SCREEN_WIDTH // 2, 560))
+        self.screen.blit(start_text, start_rect)
     
     def handle_events(self):
         """Handle Pygame events"""
@@ -295,10 +352,23 @@ class FingerGunDuckHunter:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
-                
+
+                elif event.key == pygame.K_SPACE:
+                    if self.game_engine.state == GameState.MENU:
+                        self.game_engine.state = GameState.PLAYING
+                        if not self.music_muted:
+                            pygame.mixer.music.play(-1)
+
                 elif event.key == pygame.K_r and self.game_engine.state == GameState.GAME_OVER:
+                    # Save score before restart
+                    add_score(
+                        self.game_engine.score,
+                        self.game_engine.get_accuracy(),
+                        self.game_engine.hits,
+                    )
                     # Restart game
                     self.game_engine.reset()
+                    self._game_over_scored = False
                     # Resume music
                     if not self.music_muted:
                         pygame.mixer.music.play(-1)
@@ -405,6 +475,13 @@ class FingerGunDuckHunter:
             
             # Game over screen
             if self.game_engine.state == GameState.GAME_OVER:
+                if not self._game_over_scored:
+                    add_score(
+                        self.game_engine.score,
+                        self.game_engine.get_accuracy(),
+                        self.game_engine.hits,
+                    )
+                    self._game_over_scored = True
                 self.draw_game_over_screen()
                 # Fade out music on game over (only once)
                 if pygame.mixer.music.get_busy() and not self.music_muted:
@@ -413,6 +490,10 @@ class FingerGunDuckHunter:
             # Pause overlay
             if self.game_engine.state == GameState.PAUSED:
                 self.game_engine.draw_pause_overlay(self.screen)
+
+            # Menu overlay
+            if self.game_engine.state == GameState.MENU:
+                self.draw_menu_screen()
             
             # Update display
             pygame.display.flip()

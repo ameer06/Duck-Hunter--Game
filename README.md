@@ -65,14 +65,24 @@ python main.py
 ## Project Structure
 ```
 duck hunter/
-├── main.py              # Main game loop
-├── hand_gesture.py      # Hand detection logic
-├── game_engine.py       # Duck behavior, scoring, and levels
-├── highscore.py         # High score persistence
-├── generate_assets.py   # Creates fallback game assets
-├── requirements.txt     # Dependencies
-├── assets/              # Game sprites (duck, background, crosshair)
-└── test_hand.py         # Quick hand detection test
+├── main.py                  # Main game loop
+├── hand_gesture.py          # Hand detection logic
+├── game_engine.py           # Duck behavior, scoring, and levels
+├── highscore.py             # High score persistence
+├── generate_assets.py       # Creates fallback game assets
+├── requirements.txt         # Dependencies
+├── RUN_GAME.bat             # One-click launcher (Windows)
+├── assets/                  # Game sprites and sounds
+│   ├── background.png       # Sky and hills backdrop
+│   ├── duck_sheet.png       # 4-frame duck animation
+│   ├── tree1/2/3.png        # Tree sprites at various depths
+│   ├── grass_fg.png         # Foreground grass overlay
+│   ├── crosshair.png        # Aiming reticle
+│   ├── gunshot.wav          # Shot sound effect
+│   ├── bg_music.wav         # Background music loop
+│   └── quack.wav            # Duck quack sound
+├── test_hand.py             # Quick webcam + hand detection test
+└── test_hand_detection.py   # Full dependency diagnostic tool
 ```
 
 ## Troubleshooting

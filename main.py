@@ -137,16 +137,22 @@ class FingerGunDuckHunter:
             self.camera.release()
             
         print(f"Opening camera index {index}...")
-        self.camera = cv2.VideoCapture(index)
-        
-        if self.camera.isOpened():
-            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            print(f"✓ Camera {index} opened successfully")
-            return True
-        else:
-            print(f"⚠ Failed to open camera index {index}")
+        try:
+            self.camera = cv2.VideoCapture(index)
+        except Exception as e:
+            print(f"Failed to create camera: {e}")
+            self.camera = None
             return False
+        
+        if self.camera is None or not self.camera.isOpened():
+            print(f"Failed to open camera index {index}")
+            self.camera = None
+            return False
+            
+        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        print(f"Camera {index} opened successfully")
+        return True
 
     def cycle_camera(self):
         """Try next camera index (0-3)"""
@@ -284,6 +290,13 @@ class FingerGunDuckHunter:
         hits_rect = hits_text.get_rect(center=(self.SCREEN_WIDTH // 2, 400))
         self.screen.blit(hits_text, hits_rect)
 
+        escaped_text = self.font.render(
+            f"Ducks Escaped: {self.game_engine.escaped_ducks}",
+            True, (255, 150, 100)
+        )
+        escaped_rect = escaped_text.get_rect(center=(self.SCREEN_WIDTH // 2, 430))
+        self.screen.blit(escaped_text, escaped_rect)
+
         # High score
         high = get_high_score()
         if high > 0:
@@ -292,7 +305,7 @@ class FingerGunDuckHunter:
             self.screen.blit(hs_text, hs_rect)
         
         # Instructions
-        restart_text = self.font.render("Press R to Restart or ESC to Quit", True, (255, 215, 0))
+        restart_text = self.font.render("R - Restart    M - Menu    ESC - Quit", True, (255, 215, 0))
         restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 530))
         self.screen.blit(restart_text, restart_rect)
 
@@ -372,6 +385,17 @@ class FingerGunDuckHunter:
                     # Resume music
                     if not self.music_muted:
                         pygame.mixer.music.play(-1)
+
+                elif event.key == pygame.K_m and self.game_engine.state == GameState.GAME_OVER:
+                    # Save score and go back to menu
+                    add_score(
+                        self.game_engine.score,
+                        self.game_engine.get_accuracy(),
+                        self.game_engine.hits,
+                    )
+                    self.game_engine.reset()
+                    self.game_engine.state = GameState.MENU
+                    self._game_over_scored = False
                 
                 elif event.key == pygame.K_w:
                     # Toggle webcam preview
@@ -381,8 +405,8 @@ class FingerGunDuckHunter:
                     # Toggle FPS display
                     self.show_fps = not self.show_fps
 
-                elif event.key == pygame.K_m:
-                    # Toggle background music mute
+                elif event.key == pygame.K_m and self.game_engine.state != GameState.GAME_OVER:
+                    # Toggle background music mute (not during game over)
                     self.music_muted = not self.music_muted
                     if self.music_muted:
                         pygame.mixer.music.pause()

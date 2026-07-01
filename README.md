@@ -59,7 +59,10 @@ python main.py
 - Combo multipliers for consecutive hits
 - Visual effects (muzzle flash, recoil, feather particles)
 - Streak announcements (Double Kill, Triple Kill, etc.)
+- Ammo warning flash when low
+- Ducks escaped counter in HUD and game over
 - Pause/resume support
+- Back to menu from game over screen
 - Hit detection radius of 180px (pretty forgiving!)
 
 ## Project Structure

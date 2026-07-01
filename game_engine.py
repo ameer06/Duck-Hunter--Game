@@ -300,6 +300,7 @@ class GameEngine:
         self.ammo = 10
         self.shots_fired = 0
         self.hits = 0
+        self.escaped_ducks = 0
         self.consecutive_hits = 0
         self.combo_multiplier = 1.0
 
@@ -417,6 +418,8 @@ class GameEngine:
         for duck in self.ducks[:]:
             duck.update(dt)
             if not duck.alive:
+                if duck.escaped:
+                    self.escaped_ducks += 1
                 # Quack when duck escapes
                 if duck.escaped and self.quack_sound:
                     self.quack_sound.play()
@@ -631,8 +634,10 @@ class GameEngine:
 
     def draw_ui(self, screen, font):
         """Draw game UI elements"""
+        import time
+
         # Semi-transparent HUD background
-        hud_bg = pygame.Surface((250, 150), pygame.SRCALPHA)
+        hud_bg = pygame.Surface((250, 185), pygame.SRCALPHA)
         hud_bg.fill((0, 0, 0, 100))
         screen.blit(hud_bg, (10, 10))
 
@@ -640,8 +645,12 @@ class GameEngine:
         score_text = font.render(f"SCORE: {self.score}", True, (255, 255, 255))
         screen.blit(score_text, (20, 20))
 
-        # Ammo
-        ammo_color = (255, 255, 255) if self.ammo > 3 else (255, 80, 80)
+        # Ammo with flash warning when low
+        if self.ammo <= 3:
+            flash = int(time.time() * 4) % 2 == 0
+            ammo_color = (255, 80, 80) if flash else (255, 255, 255)
+        else:
+            ammo_color = (255, 255, 255)
         ammo_text = font.render(f"AMMO: {self.ammo}", True, ammo_color)
         screen.blit(ammo_text, (20, 55))
 
@@ -649,14 +658,18 @@ class GameEngine:
         accuracy_text = font.render(f"ACCURACY: {self.get_accuracy():.1f}%", True, (255, 255, 255))
         screen.blit(accuracy_text, (20, 90))
 
+        # Escaped ducks
+        escaped_text = font.render(f"ESCAPED: {self.escaped_ducks}", True, (255, 150, 100))
+        screen.blit(escaped_text, (20, 125))
+
         # Combo multiplier
         if self.combo_multiplier > 1.0:
             combo_text = font.render(f"COMBO x{self.combo_multiplier:.1f}", True, (255, 215, 0))
-            screen.blit(combo_text, (20, 125))
+            screen.blit(combo_text, (20, 160))
 
         # Level
         level_text = font.render(f"LEVEL: {self.level}", True, (0, 255, 200))
-        screen.blit(level_text, (20, 160))
+        screen.blit(level_text, (20, 195))
 
     def draw_effects(self, screen, crosshair_pos):
         """Draw visual effects"""
@@ -696,6 +709,7 @@ class GameEngine:
         self.ammo = 10
         self.shots_fired = 0
         self.hits = 0
+        self.escaped_ducks = 0
         self.consecutive_hits = 0
         self.combo_multiplier = 1.0
         self.level = 1

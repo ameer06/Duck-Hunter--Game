@@ -302,6 +302,7 @@ class GameEngine:
         self.hits = 0
         self.escaped_ducks = 0
         self.consecutive_hits = 0
+        self.best_streak = 0
         self.combo_multiplier = 1.0
 
         # Ducks
@@ -480,6 +481,8 @@ class GameEngine:
             hit_duck.get_hit()
             self.hits += 1
             self.consecutive_hits += 1
+            if self.consecutive_hits > self.best_streak:
+                self.best_streak = self.consecutive_hits
 
             # Spawn feather particles
             cx, cy = hit_duck.get_center()
@@ -671,6 +674,11 @@ class GameEngine:
         level_text = font.render(f"LEVEL: {self.level}", True, (0, 255, 200))
         screen.blit(level_text, (20, 195))
 
+        # Best streak
+        if self.best_streak >= 2:
+            streak_text = font.render(f"BEST STREAK: {self.best_streak}", True, (255, 100, 255))
+            screen.blit(streak_text, (20, 230))
+
     def draw_effects(self, screen, crosshair_pos):
         """Draw visual effects"""
         if self.shot_flash:
@@ -679,7 +687,7 @@ class GameEngine:
             pygame.draw.circle(screen, (255, 200, 100), crosshair_pos, 25, 2)
 
     def draw_pause_overlay(self, screen):
-        """Draw pause menu overlay."""
+        """Draw pause menu overlay with current stats."""
         overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         screen.blit(overlay, (0, 0))
@@ -687,8 +695,20 @@ class GameEngine:
         # PAUSED title
         title_font = pygame.font.Font(None, 96)
         title = title_font.render("PAUSED", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 60))
+        title_rect = title.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 120))
         screen.blit(title, title_rect)
+
+        # Current stats
+        stat_font = pygame.font.Font(None, 36)
+        stats = [
+            f"Score: {self.score}  |  Level: {self.level}",
+            f"Accuracy: {self.get_accuracy():.1f}%  |  Best Streak: {self.best_streak}",
+            f"Ammo: {self.ammo}  |  Ducks Hit: {self.hits}  |  Escaped: {self.escaped_ducks}",
+        ]
+        for i, line in enumerate(stats):
+            text = stat_font.render(line, True, (180, 220, 255))
+            rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 40 + i * 35))
+            screen.blit(text, rect)
 
         # Instructions
         hint_font = pygame.font.Font(None, 36)
@@ -699,7 +719,7 @@ class GameEngine:
         ]
         for i, hint in enumerate(hints):
             text = hint_font.render(hint, True, (200, 200, 200))
-            rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 30 + i * 40))
+            rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 100 + i * 35))
             screen.blit(text, rect)
 
     def reset(self):
@@ -711,6 +731,7 @@ class GameEngine:
         self.hits = 0
         self.escaped_ducks = 0
         self.consecutive_hits = 0
+        self.best_streak = 0
         self.combo_multiplier = 1.0
         self.level = 1
         self.ducks_hit_this_level = 0

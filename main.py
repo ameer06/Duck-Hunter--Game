@@ -268,8 +268,18 @@ class FingerGunDuckHunter:
         
         # Game Over text
         title = self.title_font.render("GAME OVER", True, (255, 0, 0))
-        title_rect = title.get_rect(center=(self.SCREEN_WIDTH // 2, 200))
+        title_rect = title.get_rect(center=(self.SCREEN_WIDTH // 2, 180))
         self.screen.blit(title, title_rect)
+
+        # New high score celebration
+        prev_high = getattr(self, '_prev_high_score', 0)
+        if self.game_engine.score > prev_high and self.game_engine.score > 0:
+            import time
+            pulse = abs(int(time.time() * 3) % 2)
+            celebration_color = (255, 215, 0) if pulse else (255, 100, 255)
+            new_hs = self.title_font.render("NEW HIGH SCORE!", True, celebration_color)
+            new_hs_rect = new_hs.get_rect(center=(self.SCREEN_WIDTH // 2, 250))
+            self.screen.blit(new_hs, new_hs_rect)
         
         # Final stats
         score_text = self.font.render(f"Final Score: {self.game_engine.score}", True, (255, 255, 255))
@@ -296,6 +306,14 @@ class FingerGunDuckHunter:
         )
         escaped_rect = escaped_text.get_rect(center=(self.SCREEN_WIDTH // 2, 430))
         self.screen.blit(escaped_text, escaped_rect)
+
+        if self.game_engine.best_streak >= 2:
+            streak_text = self.font.render(
+                f"Best Streak: {self.game_engine.best_streak}",
+                True, (255, 100, 255)
+            )
+            streak_rect = streak_text.get_rect(center=(self.SCREEN_WIDTH // 2, 460))
+            self.screen.blit(streak_text, streak_rect)
 
         # High score
         high = get_high_score()
@@ -425,7 +443,7 @@ class FingerGunDuckHunter:
     def run(self):
         """Main game loop"""
         print("\n" + "="*50)
-        print("🎮 FINGER GUN DUCK HUNTER 🦆")
+        print("FINGER GUN DUCK HUNTER")
         print("="*50)
         print("\nControls:")
         print("  - Form FINGER GUN pose (index out, thumb up, others curled)")
@@ -500,6 +518,7 @@ class FingerGunDuckHunter:
             # Game over screen
             if self.game_engine.state == GameState.GAME_OVER:
                 if not self._game_over_scored:
+                    self._prev_high_score = get_high_score()
                     add_score(
                         self.game_engine.score,
                         self.game_engine.get_accuracy(),
@@ -531,10 +550,11 @@ class FingerGunDuckHunter:
     def cleanup(self):
         """Clean up resources"""
         print("\nCleaning up...")
-        self.camera.release()
+        if self.camera:
+            self.camera.release()
         self.gesture_detector.close()
         pygame.quit()
-        print("Game closed. Thanks for playing! 🎮")
+        print("Game closed. Thanks for playing!")
 
 
 if __name__ == "__main__":

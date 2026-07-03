@@ -304,6 +304,8 @@ class GameEngine:
         self.consecutive_hits = 0
         self.best_streak = 0
         self.combo_multiplier = 1.0
+        self.combo_timer = 0
+        self.combo_timeout = 4.0
 
         # Ducks
         self.ducks = []
@@ -451,6 +453,14 @@ class GameEngine:
         if self.slow_motion and time.time() - self.slow_motion_time > 0.5:
             self.slow_motion = False
 
+        # Combo timeout - reset combo if no hit for a while
+        if self.consecutive_hits > 0:
+            self.combo_timer += dt
+            if self.combo_timer > self.combo_timeout:
+                self.consecutive_hits = 0
+                self.combo_multiplier = 1.0
+                self.combo_timer = 0
+
         # Check game over
         if self.ammo <= 0:
             self.state = GameState.GAME_OVER
@@ -481,6 +491,7 @@ class GameEngine:
             hit_duck.get_hit()
             self.hits += 1
             self.consecutive_hits += 1
+            self.combo_timer = 0
             if self.consecutive_hits > self.best_streak:
                 self.best_streak = self.consecutive_hits
 
@@ -549,6 +560,7 @@ class GameEngine:
         else:
             self.consecutive_hits = 0
             self.combo_multiplier = 1.0
+            self.combo_timer = 0
             return False
 
     def _advance_level(self):
@@ -733,6 +745,7 @@ class GameEngine:
         self.consecutive_hits = 0
         self.best_streak = 0
         self.combo_multiplier = 1.0
+        self.combo_timer = 0
         self.level = 1
         self.ducks_hit_this_level = 0
         self.max_ducks = 3

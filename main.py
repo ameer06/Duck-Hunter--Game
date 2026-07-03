@@ -60,6 +60,7 @@ class FingerGunDuckHunter:
         self.running = True
         self.show_webcam = True  # press W to toggle
         self.show_fps = True
+        self.show_hitbox = False  # press H to toggle
         self._game_over_scored = False
         
     def load_assets(self):
@@ -355,6 +356,19 @@ class FingerGunDuckHunter:
             hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 250))
             self.screen.blit(hs_text, hs_rect)
 
+        # Top 5 leaderboard
+        scores = get_scores()
+        if scores:
+            lb_title = self.font.render("-- LEADERBOARD --", True, (255, 215, 0))
+            lb_rect = lb_title.get_rect(center=(self.SCREEN_WIDTH // 2, 290))
+            self.screen.blit(lb_title, lb_rect)
+            for i, entry in enumerate(scores[:5]):
+                line = f"{i+1}. {entry['score']}  ({entry['accuracy']}%)"
+                color = (255, 215, 0) if i == 0 else (200, 200, 200)
+                text = self.font.render(line, True, color)
+                rect = text.get_rect(center=(self.SCREEN_WIDTH // 2, 320 + i * 28))
+                self.screen.blit(text, rect)
+
         # Controls
         controls = [
             "Make a finger gun pose to aim",
@@ -423,6 +437,10 @@ class FingerGunDuckHunter:
                     # Toggle FPS display
                     self.show_fps = not self.show_fps
 
+                elif event.key == pygame.K_h:
+                    # Toggle hitbox debug view
+                    self.show_hitbox = not self.show_hitbox
+
                 elif event.key == pygame.K_m and self.game_engine.state != GameState.GAME_OVER:
                     # Toggle background music mute (not during game over)
                     self.music_muted = not self.music_muted
@@ -489,8 +507,8 @@ class FingerGunDuckHunter:
             # Update game logic (skips if paused internally)
             self.game_engine.update()
             
-            # Draw entire scene (background → far trees → ducks → near trees → grass)
-            self.game_engine.draw_scene(self.screen, show_hitbox=False)
+            # Draw entire scene (background -> far trees -> ducks -> near trees -> grass)
+            self.game_engine.draw_scene(self.screen, show_hitbox=self.show_hitbox)
             
             # UI
             self.game_engine.draw_ui(self.screen, self.font)

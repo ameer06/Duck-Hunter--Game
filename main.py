@@ -62,6 +62,11 @@ class FingerGunDuckHunter:
         self.show_fps = True
         self.show_hitbox = False  # press H to toggle
         self._game_over_scored = False
+
+        # Screen shake
+        self.shake_offset = [0, 0]
+        self.shake_intensity = 0
+        self.shake_decay = 0.85
         
     def load_assets(self):
         """Load game assets – sounds and visuals loaded independently"""
@@ -192,6 +197,9 @@ class FingerGunDuckHunter:
     
     def process_camera_frame(self):
         # capture frame from webcam and detect hand
+        if self.camera is None or not self.camera.isOpened():
+            return None
+
         ret, frame = self.camera.read()
         
         if not ret:
@@ -320,12 +328,12 @@ class FingerGunDuckHunter:
         high = get_high_score()
         if high > 0:
             hs_text = self.font.render(f"High Score: {high}", True, (255, 215, 0))
-            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 450))
+            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 490))
             self.screen.blit(hs_text, hs_rect)
         
         # Instructions
         restart_text = self.font.render("R - Restart    M - Menu    ESC - Quit", True, (255, 215, 0))
-        restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 530))
+        restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 550))
         self.screen.blit(restart_text, restart_rect)
 
     def draw_menu_screen(self):
@@ -375,17 +383,18 @@ class FingerGunDuckHunter:
             "Quick thumb down-up motion to shoot",
             "",
             "P - Pause    W - Webcam    M - Mute",
-            "F - FPS      C - Camera    ESC - Quit",
+            "F - FPS      H - Hitbox    C - Camera",
+            "ESC - Quit",
         ]
         for i, line in enumerate(controls):
-            color = (200, 200, 200) if line else (200, 200, 200)
+            color = (200, 200, 200)
             text = self.font.render(line, True, color)
-            rect = text.get_rect(center=(self.SCREEN_WIDTH // 2, 320 + i * 35))
+            rect = text.get_rect(center=(self.SCREEN_WIDTH // 2, 490 + i * 28))
             self.screen.blit(text, rect)
 
         # Start prompt
         start_text = self.font.render("Press SPACE to Start", True, (255, 255, 0))
-        start_rect = start_text.get_rect(center=(self.SCREEN_WIDTH // 2, 560))
+        start_rect = start_text.get_rect(center=(self.SCREEN_WIDTH // 2, 670))
         self.screen.blit(start_text, start_rect)
     
     def handle_events(self):
@@ -495,6 +504,8 @@ class FingerGunDuckHunter:
                     # Play gunshot sound
                     if self.gunshot_sound:
                         self.gunshot_sound.play()
+                    # Screen shake on shot
+                    self.shake_intensity = 8 if hit else 4
                     if hit:
                         print(f"💥 HIT! Score: {self.game_engine.score}")
                     else:
@@ -506,9 +517,20 @@ class FingerGunDuckHunter:
             
             # Update game logic (skips if paused internally)
             self.game_engine.update()
-            
-            # Draw entire scene (background -> far trees -> ducks -> near trees -> grass)
-            self.game_engine.draw_scene(self.screen, show_hitbox=self.show_hitbox)
+
+            # Update screen shake
+            import random as _rand
+            if self.shake_intensity > 0.5:
+                self.shake_offset[0] = _rand.randint(-int(self.shake_intensity), int(self.shake_intensity))
+                self.shake_offset[1] = _rand.randint(-int(self.shake_intensity), int(self.shake_intensity))
+                self.shake_intensity *= self.shake_decay
+            else:
+                self.shake_offset = [0, 0]
+                self.shake_intensity = 0
+
+            # Draw entire scene with shake offset
+            sx, sy = self.shake_offset
+            self.game_engine.draw_scene(self.screen, show_hitbox=self.show_hitbox, offset=(sx, sy))
             
             # UI
             self.game_engine.draw_ui(self.screen, self.font)
@@ -532,6 +554,16 @@ class FingerGunDuckHunter:
             if self.show_fps:
                 fps_text = self.font.render(f"FPS: {int(self.clock.get_fps())}", True, (255, 255, 0))
                 self.screen.blit(fps_text, (self.SCREEN_WIDTH - 150, 60))
+
+            # Keybind hints (during gameplay only)
+            if self.game_engine.state == GameState.PLAYING:
+                hint_font = pygame.font.Font(None, 24)
+                hints = hint_font.render(
+                    "P: Pause  W: Webcam  F: FPS  H: Hitbox  M: Mute  C: Camera",
+                    True, (180, 180, 180)
+                )
+                hints_rect = hints.get_rect(center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT - 15))
+                self.screen.blit(hints, hints_rect)
             
             # Game over screen
             if self.game_engine.state == GameState.GAME_OVER:

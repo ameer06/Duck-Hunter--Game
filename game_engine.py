@@ -602,7 +602,7 @@ class GameEngine:
 
     # ─── LAYERED SCENE RENDERING ─────────────────────────────────────────
 
-    def draw_scene(self, screen, show_hitbox=False):
+    def draw_scene(self, screen, show_hitbox=False, offset=(0, 0)):
         """
         Draw the entire scene in correct z-order:
           Layer 0: far trees
@@ -612,9 +612,11 @@ class GameEngine:
           Layer 4: near/foreground trees
           Layer 5: grass overlay
         """
+        ox, oy = offset
+
         # Background
         if self.background:
-            screen.blit(self.background, (0, 0))
+            screen.blit(self.background, (ox, oy))
 
         # Collect all drawables with their z_layer
         drawables = []

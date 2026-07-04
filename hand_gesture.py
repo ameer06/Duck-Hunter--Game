@@ -273,8 +273,11 @@ class HandGestureDetector:
     
     def close(self):
         """Cleanup"""
-        if self.hands and not self.use_new_api:
+        if self.hands:
             try:
-                self.hands.close()
-            except:
+                if self.use_new_api:
+                    self.hands.close()
+                else:
+                    self.hands.close()
+            except Exception:
                 pass

@@ -41,7 +41,9 @@ python main.py
 - **M Key**: Mute / Unmute background music
 - **C Key**: Cycle camera (if webcam not working)
 - **F Key**: Show/hide FPS
+- **H Key**: Toggle hitbox debug view
 - **R Key**: Restart (on game over screen)
+- **UP/DOWN Arrows**: Adjust music volume
 - **ESC**: Quit game
 
 ## Tips
@@ -52,16 +54,20 @@ python main.py
 
 ## Game Features
 - Hand tracking using MediaPipe
-- Main menu screen with controls guide
+- Main menu screen with controls guide and leaderboard
 - Score tracking and accuracy stats
 - High score persistence (top 5 scores saved)
 - Difficulty progression with leveling system
 - Combo multipliers for consecutive hits
 - Visual effects (muzzle flash, recoil, feather particles)
+- Screen shake on shot (stronger on hit, lighter on miss)
 - Streak announcements (Double Kill, Triple Kill, etc.)
 - Ammo warning flash when low
 - Ducks escaped counter in HUD and game over
-- Pause/resume support
+- Pause/resume with live stats display
+- Hitbox debug view (H key)
+- Music volume controls (UP/DOWN arrows)
+- Camera not detected warning overlay
 - Back to menu from game over screen
 - Hit detection radius of 180px (pretty forgiving!)
 

@@ -651,7 +651,6 @@ class GameEngine:
 
     def draw_ui(self, screen, font):
         """Draw game UI elements"""
-        import time
 
         # Semi-transparent HUD background
         hud_bg = pygame.Surface((250, 185), pygame.SRCALPHA)
@@ -729,6 +728,7 @@ class GameEngine:
         hints = [
             "Press P to Resume",
             "Press M to Mute/Unmute Music",
+            "Press \u2191\u2193 to Adjust Volume",
             "Press ESC to Quit",
         ]
         for i, hint in enumerate(hints):

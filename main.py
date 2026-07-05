@@ -5,6 +5,8 @@
 import pygame
 import cv2
 import sys
+import random
+import time
 import numpy as np
 from hand_gesture import HandGestureDetector
 from game_engine import GameEngine, GameState
@@ -63,6 +65,10 @@ class FingerGunDuckHunter:
         self.show_hitbox = False  # press H to toggle
         self._game_over_scored = False
 
+        # Volume control
+        self.music_volume = 0.45
+        self._volume_timer = 0  # shows volume indicator briefly
+
         # Screen shake
         self.shake_offset = [0, 0]
         self.shake_intensity = 0
@@ -81,7 +87,7 @@ class FingerGunDuckHunter:
 
         try:
             pygame.mixer.music.load('assets/bg_music.wav')
-            pygame.mixer.music.set_volume(0.45)
+            pygame.mixer.music.set_volume(self.music_volume)
             pygame.mixer.music.play(-1)
             self.music_muted = False
             print("✓ Background music started")
@@ -283,7 +289,6 @@ class FingerGunDuckHunter:
         # New high score celebration
         prev_high = getattr(self, '_prev_high_score', 0)
         if self.game_engine.score > prev_high and self.game_engine.score > 0:
-            import time
             pulse = abs(int(time.time() * 3) % 2)
             celebration_color = (255, 215, 0) if pulse else (255, 100, 255)
             new_hs = self.title_font.render("NEW HIGH SCORE!", True, celebration_color)
@@ -384,7 +389,7 @@ class FingerGunDuckHunter:
             "",
             "P - Pause    W - Webcam    M - Mute",
             "F - FPS      H - Hitbox    C - Camera",
-            "ESC - Quit",
+            "\u2191\u2193 - Volume    R - Restart  ESC - Quit",
         ]
         for i, line in enumerate(controls):
             color = (200, 200, 200)
@@ -466,6 +471,16 @@ class FingerGunDuckHunter:
                 elif event.key == pygame.K_c:
                     # Cycle camera index
                     self.cycle_camera()
+
+                elif event.key == pygame.K_UP:
+                    self.music_volume = min(1.0, self.music_volume + 0.1)
+                    pygame.mixer.music.set_volume(self.music_volume)
+                    self._volume_timer = pygame.time.get_ticks()
+
+                elif event.key == pygame.K_DOWN:
+                    self.music_volume = max(0.0, self.music_volume - 0.1)
+                    pygame.mixer.music.set_volume(self.music_volume)
+                    self._volume_timer = pygame.time.get_ticks()
     
     def run(self):
         """Main game loop"""
@@ -519,10 +534,9 @@ class FingerGunDuckHunter:
             self.game_engine.update()
 
             # Update screen shake
-            import random as _rand
             if self.shake_intensity > 0.5:
-                self.shake_offset[0] = _rand.randint(-int(self.shake_intensity), int(self.shake_intensity))
-                self.shake_offset[1] = _rand.randint(-int(self.shake_intensity), int(self.shake_intensity))
+                self.shake_offset[0] = random.randint(-int(self.shake_intensity), int(self.shake_intensity))
+                self.shake_offset[1] = random.randint(-int(self.shake_intensity), int(self.shake_intensity))
                 self.shake_intensity *= self.shake_decay
             else:
                 self.shake_offset = [0, 0]
@@ -559,7 +573,7 @@ class FingerGunDuckHunter:
             if self.game_engine.state == GameState.PLAYING:
                 hint_font = pygame.font.Font(None, 24)
                 hints = hint_font.render(
-                    "P: Pause  W: Webcam  F: FPS  H: Hitbox  M: Mute  C: Camera",
+                    "P: Pause  W: Webcam  F: FPS  H: Hitbox  M: Mute  C: Camera  \u2191\u2193: Volume",
                     True, (180, 180, 180)
                 )
                 hints_rect = hints.get_rect(center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT - 15))
@@ -587,6 +601,26 @@ class FingerGunDuckHunter:
             # Menu overlay
             if self.game_engine.state == GameState.MENU:
                 self.draw_menu_screen()
+            
+            # Camera not available warning
+            if self.camera is None and self.game_engine.state == GameState.PLAYING:
+                warn_font = pygame.font.Font(None, 40)
+                warn = warn_font.render("No camera detected - use mouse fallback", True, (255, 200, 50))
+                warn_rect = warn.get_rect(center=(self.SCREEN_WIDTH // 2, 50))
+                self.screen.blit(warn, warn_rect)
+
+            # Volume indicator
+            if self._volume_timer > 0 and pygame.time.get_ticks() - self._volume_timer < 1200:
+                vol_font = pygame.font.Font(None, 36)
+                bars = int(self.music_volume * 10)
+                vol_text = vol_font.render(f"Volume: [{'#' * bars}{'.' * (10 - bars)}] {int(self.music_volume * 100)}%", True, (200, 200, 200))
+                vol_rect = vol_text.get_rect(center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT - 40))
+                bg = pygame.Surface((vol_text.get_width() + 20, vol_text.get_height() + 8), pygame.SRCALPHA)
+                bg.fill((0, 0, 0, 150))
+                self.screen.blit(bg, (vol_rect.x - 10, vol_rect.y - 4))
+                self.screen.blit(vol_text, vol_rect)
+            elif self._volume_timer > 0 and pygame.time.get_ticks() - self._volume_timer >= 1200:
+                self._volume_timer = 0
             
             # Update display
             pygame.display.flip()

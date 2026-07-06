@@ -4,10 +4,8 @@
 
 import pygame
 import cv2
-import sys
 import random
 import time
-import numpy as np
 from hand_gesture import HandGestureDetector
 from game_engine import GameEngine, GameState
 from highscore import add_score, get_high_score, get_scores
@@ -33,6 +31,9 @@ class FingerGunDuckHunter:
         # fonts for UI text
         self.font = pygame.font.Font(None, 36)
         self.title_font = pygame.font.Font(None, 72)
+        self.hint_font = pygame.font.Font(None, 24)
+        self.warn_font = pygame.font.Font(None, 40)
+        self.vol_font = pygame.font.Font(None, 36)
         
         self.load_assets()
         
@@ -200,6 +201,17 @@ class FingerGunDuckHunter:
         pygame.draw.line(surf, (255, 0, 0), (12, 40), (68, 40), 2)
         pygame.draw.circle(surf, (255, 0, 0), (40, 40), 3)
         return surf
+
+    def _save_current_score(self):
+        """Save current game score to leaderboard (only once per game-over)."""
+        if not self._game_over_scored:
+            self._prev_high_score = get_high_score()
+            add_score(
+                self.game_engine.score,
+                self.game_engine.get_accuracy(),
+                self.game_engine.hits,
+            )
+            self._game_over_scored = True
     
     def process_camera_frame(self):
         # capture frame from webcam and detect hand
@@ -419,12 +431,7 @@ class FingerGunDuckHunter:
                             pygame.mixer.music.play(-1)
 
                 elif event.key == pygame.K_r and self.game_engine.state == GameState.GAME_OVER:
-                    # Save score before restart
-                    add_score(
-                        self.game_engine.score,
-                        self.game_engine.get_accuracy(),
-                        self.game_engine.hits,
-                    )
+                    self._save_current_score()
                     # Restart game
                     self.game_engine.reset()
                     self._game_over_scored = False
@@ -434,11 +441,7 @@ class FingerGunDuckHunter:
 
                 elif event.key == pygame.K_m and self.game_engine.state == GameState.GAME_OVER:
                     # Save score and go back to menu
-                    add_score(
-                        self.game_engine.score,
-                        self.game_engine.get_accuracy(),
-                        self.game_engine.hits,
-                    )
+                    self._save_current_score()
                     self.game_engine.reset()
                     self.game_engine.state = GameState.MENU
                     self._game_over_scored = False
@@ -571,8 +574,7 @@ class FingerGunDuckHunter:
 
             # Keybind hints (during gameplay only)
             if self.game_engine.state == GameState.PLAYING:
-                hint_font = pygame.font.Font(None, 24)
-                hints = hint_font.render(
+                hints = self.hint_font.render(
                     "P: Pause  W: Webcam  F: FPS  H: Hitbox  M: Mute  C: Camera  \u2191\u2193: Volume",
                     True, (180, 180, 180)
                 )
@@ -581,14 +583,7 @@ class FingerGunDuckHunter:
             
             # Game over screen
             if self.game_engine.state == GameState.GAME_OVER:
-                if not self._game_over_scored:
-                    self._prev_high_score = get_high_score()
-                    add_score(
-                        self.game_engine.score,
-                        self.game_engine.get_accuracy(),
-                        self.game_engine.hits,
-                    )
-                    self._game_over_scored = True
+                self._save_current_score()
                 self.draw_game_over_screen()
                 # Fade out music on game over (only once)
                 if pygame.mixer.music.get_busy() and not self.music_muted:
@@ -604,16 +599,14 @@ class FingerGunDuckHunter:
             
             # Camera not available warning
             if self.camera is None and self.game_engine.state == GameState.PLAYING:
-                warn_font = pygame.font.Font(None, 40)
-                warn = warn_font.render("No camera detected - use mouse fallback", True, (255, 200, 50))
+                warn = self.warn_font.render("No camera detected - use mouse fallback", True, (255, 200, 50))
                 warn_rect = warn.get_rect(center=(self.SCREEN_WIDTH // 2, 50))
                 self.screen.blit(warn, warn_rect)
 
             # Volume indicator
             if self._volume_timer > 0 and pygame.time.get_ticks() - self._volume_timer < 1200:
-                vol_font = pygame.font.Font(None, 36)
                 bars = int(self.music_volume * 10)
-                vol_text = vol_font.render(f"Volume: [{'#' * bars}{'.' * (10 - bars)}] {int(self.music_volume * 100)}%", True, (200, 200, 200))
+                vol_text = self.vol_font.render(f"Volume: [{'#' * bars}{'.' * (10 - bars)}] {int(self.music_volume * 100)}%", True, (200, 200, 200))
                 vol_rect = vol_text.get_rect(center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT - 40))
                 bg = pygame.Surface((vol_text.get_width() + 20, vol_text.get_height() + 8), pygame.SRCALPHA)
                 bg.fill((0, 0, 0, 150))

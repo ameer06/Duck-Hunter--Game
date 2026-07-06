@@ -18,8 +18,11 @@ def _load():
 
 
 def _save(scores):
-    with open(SCORES_FILE, "w") as f:
-        json.dump(scores, f, indent=2)
+    try:
+        with open(SCORES_FILE, "w") as f:
+            json.dump(scores, f, indent=2)
+    except (IOError, OSError):
+        pass
 
 
 def get_scores():

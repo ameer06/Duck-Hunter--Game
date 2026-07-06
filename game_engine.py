@@ -266,6 +266,7 @@ class FloatingText:
         self.life = duration
         self.max_life = duration
         self.vy = -1.5  # float upward
+        self._font = pygame.font.Font(None, size)
 
     def update(self, dt=1/60):
         self.y += self.vy
@@ -274,8 +275,7 @@ class FloatingText:
 
     def draw(self, screen, font=None):
         alpha = max(0, min(255, int((self.life / self.max_life) * 255)))
-        render_font = pygame.font.Font(None, self.size)
-        text_surf = render_font.render(self.text, True, self.color)
+        text_surf = self._font.render(self.text, True, self.color)
         text_surf.set_alpha(alpha)
         rect = text_surf.get_rect(center=(int(self.x), int(self.y)))
         screen.blit(text_surf, rect)
@@ -328,6 +328,11 @@ class GameEngine:
 
         # Floating text popups
         self.floating_texts = []
+
+        # Cached fonts (avoid per-frame allocation)
+        self._pause_title_font = pygame.font.Font(None, 96)
+        self._pause_stat_font = pygame.font.Font(None, 36)
+        self._pause_hint_font = pygame.font.Font(None, 36)
 
         # Streak tracking
         self.streak_names = {
@@ -706,25 +711,22 @@ class GameEngine:
         screen.blit(overlay, (0, 0))
 
         # PAUSED title
-        title_font = pygame.font.Font(None, 96)
-        title = title_font.render("PAUSED", True, (255, 255, 255))
+        title = self._pause_title_font.render("PAUSED", True, (255, 255, 255))
         title_rect = title.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 120))
         screen.blit(title, title_rect)
 
         # Current stats
-        stat_font = pygame.font.Font(None, 36)
         stats = [
             f"Score: {self.score}  |  Level: {self.level}",
             f"Accuracy: {self.get_accuracy():.1f}%  |  Best Streak: {self.best_streak}",
             f"Ammo: {self.ammo}  |  Ducks Hit: {self.hits}  |  Escaped: {self.escaped_ducks}",
         ]
         for i, line in enumerate(stats):
-            text = stat_font.render(line, True, (180, 220, 255))
+            text = self._pause_stat_font.render(line, True, (180, 220, 255))
             rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 40 + i * 35))
             screen.blit(text, rect)
 
         # Instructions
-        hint_font = pygame.font.Font(None, 36)
         hints = [
             "Press P to Resume",
             "Press M to Mute/Unmute Music",
@@ -732,7 +734,7 @@ class GameEngine:
             "Press ESC to Quit",
         ]
         for i, hint in enumerate(hints):
-            text = hint_font.render(hint, True, (200, 200, 200))
+            text = self._pause_hint_font.render(hint, True, (200, 200, 200))
             rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 100 + i * 35))
             screen.blit(text, rect)
 

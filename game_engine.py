@@ -249,7 +249,11 @@ class Particle:
     def draw(self, screen):
         alpha = max(0, min(255, int(self.life * 255)))
         r, g, b = self.color
-        pygame.draw.circle(screen, (r, g, b), (int(self.x), int(self.y)), self.size)
+        factor = alpha / 255.0
+        r2 = int(r * factor)
+        g2 = int(g * factor)
+        b2 = int(b * factor)
+        pygame.draw.circle(screen, (r2, g2, b2), (int(self.x), int(self.y)), self.size)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -3,7 +3,6 @@
 # Uses MediaPipe for hand tracking
 
 import cv2
-import numpy as np
 from collections import deque
 import time
 import mediapipe as mp
@@ -47,8 +46,12 @@ class HandGestureDetector:
                 if not os.path.exists(model_path):
                     print("Downloading hand detection model...")
                     url = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
-                    urllib.request.urlretrieve(url, model_path)
-                    print("✓ Model downloaded")
+                    try:
+                        urllib.request.urlretrieve(url, model_path)
+                        print("✓ Model downloaded")
+                    except Exception as dl_err:
+                        print(f"Failed to download model: {dl_err}")
+                        raise
                 
                 BaseOptions = mp.tasks.BaseOptions
                 HandLandmarker = mp.tasks.vision.HandLandmarker

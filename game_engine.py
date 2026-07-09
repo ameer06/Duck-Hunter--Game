@@ -617,6 +617,7 @@ class GameEngine:
         )
 
     def get_accuracy(self):
+        """Return shooting accuracy as a percentage (0-100)."""
         if self.shots_fired == 0:
             return 0.0
         return (self.hits / self.shots_fired) * 100

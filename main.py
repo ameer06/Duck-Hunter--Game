@@ -12,7 +12,7 @@ from highscore import add_score, get_high_score, get_scores
 
 
 class FingerGunDuckHunter:
-    # main game class - handles everything
+    """Main game class — manages window, input, camera, and game loop."""
     
     def __init__(self):
         pygame.mixer.pre_init(44100, -16, 1, 512)
@@ -192,6 +192,7 @@ class FingerGunDuckHunter:
 
     # ── Fallback helpers ──────────────────────────────────────────────────
     def _make_fallback_duck(self):
+        """Create a simple duck sprite when assets are missing."""
         surf = pygame.Surface((120, 100), pygame.SRCALPHA)
         pygame.draw.ellipse(surf, (139, 69, 19), [10, 30, 60, 30])
         pygame.draw.circle(surf, (34, 139, 34), (20, 35), 15)
@@ -199,6 +200,7 @@ class FingerGunDuckHunter:
         return surf
 
     def _make_fallback_background(self):
+        """Create a simple sky-and-grass background when assets are missing."""
         surf = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         surf.fill((135, 206, 235))
         pygame.draw.rect(surf, (34, 139, 34),
@@ -206,6 +208,7 @@ class FingerGunDuckHunter:
         return surf
 
     def _make_fallback_crosshair(self):
+        """Create a simple crosshair sprite when assets are missing."""
         surf = pygame.Surface((80, 80), pygame.SRCALPHA)
         pygame.draw.circle(surf, (255, 0, 0), (40, 40), 34, 3)
         pygame.draw.line(surf, (255, 0, 0), (40, 12), (40, 68), 2)

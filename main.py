@@ -75,6 +75,16 @@ class FingerGunDuckHunter:
         self.shake_offset = [0, 0]
         self.shake_intensity = 0
         self.shake_decay = 0.85
+
+        # Cached overlay surfaces (created once, reused every frame)
+        self._full_overlay = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self._full_overlay.set_alpha(200)
+        self._full_overlay.fill((0, 0, 0))
+        self._menu_overlay = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self._menu_overlay.set_alpha(160)
+        self._menu_overlay.fill((0, 0, 0))
+        self._vol_bg = pygame.Surface((300, 40), pygame.SRCALPHA)
+        self._vol_bg.fill((0, 0, 0, 150))
         
     def load_assets(self):
         """Load game assets – sounds and visuals loaded independently"""
@@ -294,10 +304,7 @@ class FingerGunDuckHunter:
     def draw_game_over_screen(self):
         """Draw game over screen"""
         # Semi-transparent overlay
-        overlay = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
-        overlay.set_alpha(200)
-        overlay.fill((0, 0, 0))
-        self.screen.blit(overlay, (0, 0))
+        self.screen.blit(self._full_overlay, (0, 0))
         
         # Game Over text
         title = self.title_font.render("GAME OVER", True, (255, 0, 0))
@@ -366,10 +373,7 @@ class FingerGunDuckHunter:
         else:
             self.screen.fill((135, 206, 235))
 
-        overlay = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
-        overlay.set_alpha(160)
-        overlay.fill((0, 0, 0))
-        self.screen.blit(overlay, (0, 0))
+        self.screen.blit(self._menu_overlay, (0, 0))
 
         # Title
         title = self.title_font.render("DUCK HUNTER", True, (255, 215, 0))
@@ -516,8 +520,10 @@ class FingerGunDuckHunter:
             # Handle events
             self.handle_events()
             
-            # Process camera frame and detect gestures
-            gesture_data = self.process_camera_frame()
+            # Process camera frame and detect gestures (skip when not playing)
+            gesture_data = None
+            if self.game_engine.state == GameState.PLAYING:
+                gesture_data = self.process_camera_frame()
             
             if gesture_data:
                 aim_pos = gesture_data['aim_pos']

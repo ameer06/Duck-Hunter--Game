@@ -336,6 +336,12 @@ class GameEngine:
         self._pause_stat_font = pygame.font.Font(None, 36)
         self._pause_hint_font = pygame.font.Font(None, 36)
 
+        # Cached surfaces
+        self._hud_bg = pygame.Surface((250, 185), pygame.SRCALPHA)
+        self._hud_bg.fill((0, 0, 0, 100))
+        self._pause_overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+        self._pause_overlay.fill((0, 0, 0, 150))
+
         # Streak tracking
         self.streak_names = {
             2: 'DOUBLE KILL!',
@@ -663,9 +669,7 @@ class GameEngine:
         """Draw game UI elements"""
 
         # Semi-transparent HUD background
-        hud_bg = pygame.Surface((250, 185), pygame.SRCALPHA)
-        hud_bg.fill((0, 0, 0, 100))
-        screen.blit(hud_bg, (10, 10))
+        screen.blit(self._hud_bg, (10, 10))
 
         # Score
         score_text = font.render(f"SCORE: {self.score}", True, (255, 255, 255))
@@ -711,9 +715,7 @@ class GameEngine:
 
     def draw_pause_overlay(self, screen):
         """Draw pause menu overlay with current stats."""
-        overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 150))
-        screen.blit(overlay, (0, 0))
+        screen.blit(self._pause_overlay, (0, 0))
 
         # PAUSED title
         title = self._pause_title_font.render("PAUSED", True, (255, 255, 255))

@@ -96,9 +96,9 @@ class Duck:
             self.frame_index = (self.frame_index + 1) % len(self.frames)
 
         if self.hit:
-            # Tumble fall
-            fall_elapsed = time.time() - self.hit_time
-            self.y += fall_elapsed * 180 * dt * 60
+            # Tumble fall with gravity
+            self.fall_vy += 600 * dt  # gravity acceleration
+            self.y += self.fall_vy * dt
             self.rotation += 8  # spin
             if self.y > self.screen_height + 50:
                 self.alive = False
@@ -135,6 +135,7 @@ class Duck:
 
         # Clamp Y so ducks don't go off-screen vertically
         self.y = max(30, min(self.screen_height - 180, self.y))
+        self.base_y = max(30, min(self.screen_height - 180, self.base_y))
 
         # Remove if off screen horizontally
         if self.x < -self.width - 20 or self.x > self.screen_width + 20:
@@ -158,6 +159,7 @@ class Duck:
         self.hit = True
         self.hit_time = time.time()
         self.speed = 0
+        self.fall_vy = 0  # vertical velocity for tumble fall
 
     def draw(self, screen, show_hitbox=False):
         """Draw current animation frame"""
@@ -652,7 +654,7 @@ class GameEngine:
 
         # Foreground grass (on top of everything except UI)
         if self.grass_fg:
-            screen.blit(self.grass_fg, (0, self.screen_height - self.grass_fg.get_height()))
+            screen.blit(self.grass_fg, (ox, self.screen_height - self.grass_fg.get_height() + oy))
 
     def draw_ui(self, screen, font):
         """Draw game UI elements"""

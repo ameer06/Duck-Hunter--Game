@@ -65,6 +65,7 @@ class FingerGunDuckHunter:
         self.show_fps = True
         self.show_hitbox = False  # press H to toggle
         self._game_over_scored = False
+        self._music_faded_out = False
 
         # Volume control
         self.music_volume = 0.45
@@ -427,6 +428,7 @@ class FingerGunDuckHunter:
                 elif event.key == pygame.K_SPACE:
                     if self.game_engine.state == GameState.MENU:
                         self.game_engine.state = GameState.PLAYING
+                        self._music_faded_out = False
                         if not self.music_muted:
                             pygame.mixer.music.play(-1)
 
@@ -435,21 +437,31 @@ class FingerGunDuckHunter:
                     # Restart game
                     self.game_engine.reset()
                     self._game_over_scored = False
+                    self._music_faded_out = False
                     # Resume music
                     if not self.music_muted:
                         pygame.mixer.music.play(-1)
 
-                elif event.key == pygame.K_m and self.game_engine.state == GameState.GAME_OVER:
-                    # Save score and go back to menu
-                    self._save_current_score()
-                    self.game_engine.reset()
-                    self.game_engine.state = GameState.MENU
-                    self._game_over_scored = False
-                
+                elif event.key == pygame.K_m:
+                    if self.game_engine.state == GameState.GAME_OVER:
+                        # Save score and go back to menu
+                        self._save_current_score()
+                        self.game_engine.reset()
+                        self.game_engine.state = GameState.MENU
+                        self._game_over_scored = False
+                        self._music_faded_out = False
+                    else:
+                        # Toggle background music mute
+                        self.music_muted = not self.music_muted
+                        if self.music_muted:
+                            pygame.mixer.music.pause()
+                        else:
+                            pygame.mixer.music.unpause()
+
                 elif event.key == pygame.K_w:
                     # Toggle webcam preview
                     self.show_webcam = not self.show_webcam
-                
+
                 elif event.key == pygame.K_f:
                     # Toggle FPS display
                     self.show_fps = not self.show_fps
@@ -457,14 +469,6 @@ class FingerGunDuckHunter:
                 elif event.key == pygame.K_h:
                     # Toggle hitbox debug view
                     self.show_hitbox = not self.show_hitbox
-
-                elif event.key == pygame.K_m and self.game_engine.state != GameState.GAME_OVER:
-                    # Toggle background music mute (not during game over)
-                    self.music_muted = not self.music_muted
-                    if self.music_muted:
-                        pygame.mixer.music.pause()
-                    else:
-                        pygame.mixer.music.unpause()
 
                 elif event.key == pygame.K_p:
                     # Toggle pause
@@ -586,8 +590,9 @@ class FingerGunDuckHunter:
                 self._save_current_score()
                 self.draw_game_over_screen()
                 # Fade out music on game over (only once)
-                if pygame.mixer.music.get_busy() and not self.music_muted:
+                if not self._music_faded_out and pygame.mixer.music.get_busy() and not self.music_muted:
                     pygame.mixer.music.fadeout(2000)
+                    self._music_faded_out = True
             
             # Pause overlay
             if self.game_engine.state == GameState.PAUSED:

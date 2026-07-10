@@ -12,10 +12,6 @@ def lerp_color(c1, c2, t):
     return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
 
 
-def draw_ellipse_aa(draw, bbox, fill):
-    draw.ellipse(bbox, fill=fill)
-
-
 def make_pine(w=120, h=300):
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)

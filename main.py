@@ -57,8 +57,8 @@ class FingerGunDuckHunter:
             quack.set_volume(0.5)
             self.game_engine.load_quack_sound(quack)
             print("✓ Quack sound loaded")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Could not load quack sound: {e}")
         
         self.running = True
         self.show_webcam = True  # press W to toggle
@@ -222,6 +222,11 @@ class FingerGunDuckHunter:
         ret, frame = self.camera.read()
         
         if not ret:
+            # Rate-limit camera failure logging (once per 5 seconds)
+            now = time.time()
+            if not hasattr(self, '_last_cam_fail_log') or now - self._last_cam_fail_log > 5:
+                print("Warning: Camera read failed")
+                self._last_cam_fail_log = now
             return None
         
         frame = cv2.flip(frame, 1)  # mirror the image

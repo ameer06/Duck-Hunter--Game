@@ -35,6 +35,13 @@ def get_high_score():
 
 
 def add_score(score, accuracy, ducks_shot):
+    if not isinstance(score, (int, float)) or score < 0:
+        return get_scores()
+    if not isinstance(accuracy, (int, float)):
+        return get_scores()
+    if not isinstance(ducks_shot, (int, float)) or ducks_shot < 0:
+        return get_scores()
+
     scores = _load()
     entry = {
         "score": score,

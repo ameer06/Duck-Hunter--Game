@@ -365,6 +365,9 @@ class GameEngine:
 
     def load_duck_frames(self, frames):
         """Load list of duck animation frame surfaces."""
+        if not frames:
+            print("Warning: No duck frames provided")
+            return
         self.duck_frames = frames
 
     def load_duck_image(self, duck_image):

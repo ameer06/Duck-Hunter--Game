@@ -411,8 +411,9 @@ class GameEngine:
         """Spawn a new animated duck"""
         if len(self.ducks) < self.max_ducks:
             new_duck = Duck(self.screen_width, self.screen_height, self.duck_frames)
-            # Scale speed with level
-            new_duck.speed *= (1 + (self.level - 1) * 0.12)
+            # Scale speed with level (cap at 3x to keep it playable)
+            speed_mult = min(1 + (self.level - 1) * 0.12, 3.0)
+            new_duck.speed *= speed_mult
             self.ducks.append(new_duck)
             self.last_spawn_time = time.time()
             # Quack on spawn

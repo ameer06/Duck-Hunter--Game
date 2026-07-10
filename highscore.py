@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 
 SCORES_FILE = "highscores.json"
 MAX_ENTRIES = 5
@@ -47,6 +48,7 @@ def add_score(score, accuracy, ducks_shot):
         "score": score,
         "accuracy": round(accuracy, 1),
         "ducks": ducks_shot,
+        "timestamp": time.time(),
     }
     scores.append(entry)
     scores.sort(key=lambda e: e["score"], reverse=True)

@@ -398,7 +398,12 @@ class FingerGunDuckHunter:
             lb_rect = lb_title.get_rect(center=(self.SCREEN_WIDTH // 2, 290))
             self.screen.blit(lb_title, lb_rect)
             for i, entry in enumerate(scores[:5]):
-                line = f"{i+1}. {entry['score']}  ({entry['accuracy']}%)"
+                date_str = ""
+                if "timestamp" in entry:
+                    import datetime
+                    dt = datetime.datetime.fromtimestamp(entry["timestamp"])
+                    date_str = f"  {dt.month}/{dt.day}"
+                line = f"{i+1}. {entry['score']}  ({entry['accuracy']}%){date_str}"
                 color = (255, 215, 0) if i == 0 else (200, 200, 200)
                 text = self.font.render(line, True, color)
                 rect = text.get_rect(center=(self.SCREEN_WIDTH // 2, 320 + i * 28))

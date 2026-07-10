@@ -659,5 +659,13 @@ class FingerGunDuckHunter:
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Finger Gun Duck Hunter - gesture-controlled duck hunting game")
+    parser.add_argument("--version", action="version", version="Duck Hunter v1.0")
+    parser.add_argument("--no-camera", action="store_true", help="Skip camera initialization (for testing)")
+    args = parser.parse_args()
+
     game = FingerGunDuckHunter()
+    if args.no_camera:
+        game.camera = None
     game.run()

@@ -357,6 +357,14 @@ class FingerGunDuckHunter:
             streak_rect = streak_text.get_rect(center=(self.SCREEN_WIDTH // 2, 460))
             self.screen.blit(streak_text, streak_rect)
 
+        if self.game_engine.highest_combo > 1.0:
+            combo_text = self.font.render(
+                f"Highest Combo: x{self.game_engine.highest_combo:.1f}",
+                True, (255, 215, 0)
+            )
+            combo_rect = combo_text.get_rect(center=(self.SCREEN_WIDTH // 2, 490))
+            self.screen.blit(combo_text, combo_rect)
+
         # High score
         high = get_high_score()
         if high > 0:

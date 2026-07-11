@@ -479,8 +479,9 @@ class GameEngine:
             self.combo_timer += dt
             if self.combo_timer > self.combo_timeout:
                 self.consecutive_hits = 0
-                self.combo_multiplier = 1.0
-                self.combo_timer = 0
+        self.combo_multiplier = 1.0
+        self.combo_timer = 0
+        self.highest_combo = 1.0  # highest combo multiplier reached this game
 
         # Check game over
         if self.ammo <= 0:
@@ -528,6 +529,7 @@ class GameEngine:
                 self.combo_multiplier = 1.5
             else:
                 self.combo_multiplier = 1.0
+            self.highest_combo = max(self.highest_combo, self.combo_multiplier)
 
             points = int(100 * self.combo_multiplier)
             self.score += points
@@ -763,6 +765,7 @@ class GameEngine:
         self.best_streak = 0
         self.combo_multiplier = 1.0
         self.combo_timer = 0
+        self.highest_combo = 1.0
         self.level = 1
         self.ducks_hit_this_level = 0
         self.max_ducks = 3

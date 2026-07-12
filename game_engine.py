@@ -341,7 +341,7 @@ class GameEngine:
         self._pause_hint_font = pygame.font.Font(None, 36)
 
         # Cached surfaces
-        self._hud_bg = pygame.Surface((250, 185), pygame.SRCALPHA)
+        self._hud_bg = pygame.Surface((250, 210), pygame.SRCALPHA)
         self._hud_bg.fill((0, 0, 0, 100))
         self._pause_overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         self._pause_overlay.fill((0, 0, 0, 150))
@@ -708,6 +708,13 @@ class GameEngine:
         # Level
         level_text = font.render(f"LEVEL: {self.level}", True, (0, 255, 200))
         screen.blit(level_text, (20, 195))
+
+        # Level progress
+        progress = font.render(
+            f"Progress: {self.ducks_hit_this_level}/{self.ducks_per_level}",
+            True, (0, 200, 170)
+        )
+        screen.blit(progress, (20, 225))
 
         # Best streak
         if self.best_streak >= 2:

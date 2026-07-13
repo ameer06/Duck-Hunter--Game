@@ -66,6 +66,7 @@ class FingerGunDuckHunter:
         self.show_hitbox = False  # press H to toggle
         self._game_over_scored = False
         self._music_faded_out = False
+        self._quit_confirm = False  # quit confirmation state on menu
 
         # Volume control
         self.music_volume = 0.45
@@ -439,6 +440,15 @@ class FingerGunDuckHunter:
         start_text = self.font.render("Press SPACE to Start", True, (255, 255, 0))
         start_rect = start_text.get_rect(center=(self.SCREEN_WIDTH // 2, 670))
         self.screen.blit(start_text, start_rect)
+
+        # Quit confirmation
+        if self._quit_confirm:
+            confirm = self.title_font.render("Really quit? (Y / N)", True, (255, 80, 80))
+            confirm_rect = confirm.get_rect(center=(self.SCREEN_WIDTH // 2, 620))
+            bg = pygame.Surface((confirm.get_width() + 30, confirm.get_height() + 10), pygame.SRCALPHA)
+            bg.fill((0, 0, 0, 200))
+            self.screen.blit(bg, (confirm_rect.x - 15, confirm_rect.y - 5))
+            self.screen.blit(confirm, confirm_rect)
     
     def handle_events(self):
         """Handle Pygame events"""
@@ -448,7 +458,16 @@ class FingerGunDuckHunter:
             
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    if self.game_engine.state == GameState.MENU:
+                        self._quit_confirm = not self._quit_confirm
+                    else:
+                        self.running = False
+
+                elif event.key == pygame.K_y and self._quit_confirm:
                     self.running = False
+
+                elif event.key == pygame.K_n and self._quit_confirm:
+                    self._quit_confirm = False
 
                 elif event.key == pygame.K_SPACE:
                     if self.game_engine.state == GameState.MENU:

@@ -396,6 +396,10 @@ class FingerGunDuckHunter:
         sub_rect = subtitle.get_rect(center=(self.SCREEN_WIDTH // 2, 200))
         self.screen.blit(subtitle, sub_rect)
 
+        version = self.hint_font.render("v1.0.0", True, (150, 150, 150))
+        ver_rect = version.get_rect(center=(self.SCREEN_WIDTH // 2, 235))
+        self.screen.blit(version, ver_rect)
+
         # High score
         high = get_high_score()
         if high > 0:

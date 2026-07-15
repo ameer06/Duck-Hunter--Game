@@ -504,12 +504,16 @@ class GameEngine:
         self.recoil_time = time.time()
         self.recoil_offset = (random.randint(-5, 5), random.randint(-5, 5))
 
-        # Check hit on any duck
+        # Check hit on closest duck to aim point
         hit_duck = None
+        best_dist = float('inf')
         for duck in self.ducks:
             if duck.check_collision(aim_x, aim_y):
-                hit_duck = duck
-                break
+                cx, cy = duck.get_center()
+                dist = ((aim_x - cx) ** 2 + (aim_y - cy) ** 2) ** 0.5
+                if dist < best_dist:
+                    best_dist = dist
+                    hit_duck = duck
 
         if hit_duck:
             hit_duck.get_hit()

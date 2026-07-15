@@ -67,6 +67,7 @@ class FingerGunDuckHunter:
         self._game_over_scored = False
         self._music_faded_out = False
         self._quit_confirm = False  # quit confirmation state on menu
+        self._session_best = 0  # best score this session (across games)
 
         # Volume control
         self.music_volume = 0.45
@@ -227,6 +228,7 @@ class FingerGunDuckHunter:
                 self.game_engine.hits,
             )
             self._game_over_scored = True
+            self._session_best = max(self._session_best, self.game_engine.score)
     
     def process_camera_frame(self):
         # capture frame from webcam and detect hand
@@ -372,6 +374,11 @@ class FingerGunDuckHunter:
             hs_text = self.font.render(f"High Score: {high}", True, (255, 215, 0))
             hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 490))
             self.screen.blit(hs_text, hs_rect)
+
+        if self._session_best > 0:
+            sb_text = self.font.render(f"Session Best: {self._session_best}", True, (100, 255, 200))
+            sb_rect = sb_text.get_rect(center=(self.SCREEN_WIDTH // 2, 520))
+            self.screen.blit(sb_text, sb_rect)
         
         # Instructions
         restart_text = self.font.render("R - Restart    M - Menu    ESC - Quit", True, (255, 215, 0))

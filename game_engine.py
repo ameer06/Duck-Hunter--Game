@@ -341,7 +341,7 @@ class GameEngine:
         self._pause_hint_font = pygame.font.Font(None, 36)
 
         # Cached surfaces
-        self._hud_bg = pygame.Surface((250, 210), pygame.SRCALPHA)
+        self._hud_bg = pygame.Surface((250, 310), pygame.SRCALPHA)
         self._hud_bg.fill((0, 0, 0, 100))
         self._pause_overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         self._pause_overlay.fill((0, 0, 0, 150))
@@ -700,26 +700,31 @@ class GameEngine:
         escaped_text = font.render(f"ESCAPED: {self.escaped_ducks}", True, (255, 150, 100))
         screen.blit(escaped_text, (20, 125))
 
+        # Active ducks on screen
+        active = len([d for d in self.ducks if d.alive])
+        active_text = font.render(f"ON SCREEN: {active}", True, (180, 220, 255))
+        screen.blit(active_text, (20, 155))
+
         # Combo multiplier
         if self.combo_multiplier > 1.0:
             combo_text = font.render(f"COMBO x{self.combo_multiplier:.1f}", True, (255, 215, 0))
-            screen.blit(combo_text, (20, 160))
+            screen.blit(combo_text, (20, 190))
 
         # Level
         level_text = font.render(f"LEVEL: {self.level}", True, (0, 255, 200))
-        screen.blit(level_text, (20, 195))
+        screen.blit(level_text, (20, 220))
 
         # Level progress
         progress = font.render(
             f"Progress: {self.ducks_hit_this_level}/{self.ducks_per_level}",
             True, (0, 200, 170)
         )
-        screen.blit(progress, (20, 225))
+        screen.blit(progress, (20, 250))
 
         # Best streak
         if self.best_streak >= 2:
             streak_text = font.render(f"BEST STREAK: {self.best_streak}", True, (255, 100, 255))
-            screen.blit(streak_text, (20, 230))
+            screen.blit(streak_text, (20, 280))
 
     def draw_effects(self, screen, crosshair_pos):
         """Draw visual effects"""

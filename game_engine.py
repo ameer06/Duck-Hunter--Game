@@ -479,9 +479,11 @@ class GameEngine:
             self.combo_timer += dt
             if self.combo_timer > self.combo_timeout:
                 self.consecutive_hits = 0
-        self.combo_multiplier = 1.0
-        self.combo_timer = 0
-        self.highest_combo = 1.0  # highest combo multiplier reached this game
+                self.combo_multiplier = 1.0
+                self.combo_timer = 0
+        else:
+            self.combo_multiplier = 1.0
+            self.combo_timer = 0
 
         # Check game over
         if self.ammo <= 0:

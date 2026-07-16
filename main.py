@@ -365,24 +365,24 @@ class FingerGunDuckHunter:
                 f"Highest Combo: x{self.game_engine.highest_combo:.1f}",
                 True, (255, 215, 0)
             )
-            combo_rect = combo_text.get_rect(center=(self.SCREEN_WIDTH // 2, 490))
+            combo_rect = combo_text.get_rect(center=(self.SCREEN_WIDTH // 2, 465))
             self.screen.blit(combo_text, combo_rect)
 
         # High score
         high = get_high_score()
         if high > 0:
             hs_text = self.font.render(f"High Score: {high}", True, (255, 215, 0))
-            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 490))
+            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 500))
             self.screen.blit(hs_text, hs_rect)
 
         if self._session_best > 0:
             sb_text = self.font.render(f"Session Best: {self._session_best}", True, (100, 255, 200))
-            sb_rect = sb_text.get_rect(center=(self.SCREEN_WIDTH // 2, 520))
+            sb_rect = sb_text.get_rect(center=(self.SCREEN_WIDTH // 2, 535))
             self.screen.blit(sb_text, sb_rect)
         
         # Instructions
         restart_text = self.font.render("R - Restart    M - Menu    ESC - Quit", True, (255, 215, 0))
-        restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 550))
+        restart_rect = restart_text.get_rect(center=(self.SCREEN_WIDTH // 2, 580))
         self.screen.blit(restart_text, restart_rect)
 
     def draw_menu_screen(self):
@@ -407,18 +407,18 @@ class FingerGunDuckHunter:
         ver_rect = version.get_rect(center=(self.SCREEN_WIDTH // 2, 235))
         self.screen.blit(version, ver_rect)
 
-        total = get_total_games()
-        if total > 0:
-            total_text = self.hint_font.render(f"{total} games played", True, (120, 120, 120))
-            total_rect = total_text.get_rect(center=(self.SCREEN_WIDTH // 2, 255))
-            self.screen.blit(total_text, total_rect)
-
         # High score
         high = get_high_score()
         if high > 0:
             hs_text = self.font.render(f"High Score: {high}", True, (255, 215, 0))
-            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 250))
+            hs_rect = hs_text.get_rect(center=(self.SCREEN_WIDTH // 2, 260))
             self.screen.blit(hs_text, hs_rect)
+
+        total = get_total_games()
+        if total > 0:
+            total_text = self.hint_font.render(f"{total} games played", True, (120, 120, 120))
+            total_rect = total_text.get_rect(center=(self.SCREEN_WIDTH // 2, 290))
+            self.screen.blit(total_text, total_rect)
 
         # Top 5 leaderboard
         scores = get_scores()

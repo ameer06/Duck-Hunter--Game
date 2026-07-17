@@ -35,6 +35,7 @@ python main.py
 ## Controls
 - **Hand Gesture**: Make finger gun pose to aim
 - **Thumb Motion**: Quick down-up motion to shoot
+- **Mouse**: Aim with cursor, left-click to shoot (when no camera)
 - **SPACE**: Start game from menu
 - **P Key**: Pause / Resume
 - **W Key**: Toggle webcam preview
@@ -43,6 +44,7 @@ python main.py
 - **F Key**: Show/hide FPS
 - **H Key**: Toggle hitbox debug view
 - **R Key**: Restart (on game over screen)
+- **Y/N Key**: Confirm/Cancel quit from menu
 - **UP/DOWN Arrows**: Adjust music volume
 - **ESC**: Quit game
 
@@ -51,24 +53,28 @@ python main.py
 - Keep your hand 1-2 feet from the camera  
 - Hold the finger gun pose steady to see the crosshair
 - Watch for the green circles around ducks - that's the hit zone!
+- No camera? The game auto-detects and switches to mouse mode
 
 ## Game Features
 - Hand tracking using MediaPipe
-- Main menu screen with controls guide and leaderboard
+- Mouse fallback mode when no camera is available
+- Main menu screen with controls guide, leaderboard, and game count
 - Score tracking and accuracy stats
-- High score persistence (top 5 scores saved)
-- Difficulty progression with leveling system
-- Combo multipliers for consecutive hits
-- Visual effects (muzzle flash, recoil, feather particles)
+- High score persistence (top 5 scores saved with timestamps)
+- Session best tracker across multiple games
+- Difficulty progression with leveling system and level progress display
+- Combo multipliers for consecutive hits with highest combo tracking
+- Visual effects (muzzle flash, recoil, feather particles with fade-out)
 - Screen shake on shot (stronger on hit, lighter on miss)
 - Streak announcements (Double Kill, Triple Kill, etc.)
 - Ammo warning flash when low
-- Ducks escaped counter in HUD and game over
+- Ducks escaped counter and active ducks display in HUD
 - Pause/resume with live stats display
 - Hitbox debug view (H key)
 - Music volume controls (UP/DOWN arrows)
-- Camera not detected warning overlay
-- Back to menu from game over screen
+- Quit confirmation prompt on menu
+- CLI flags: `--help`, `--no-camera`
+- Hit detection targets closest duck to aim point
 - Hit detection radius of 180px (pretty forgiving!)
 
 ## Project Structure
@@ -96,15 +102,21 @@ duck hunter/
 
 ## Troubleshooting
 
+**No camera detected:**
+- The game will automatically switch to mouse mode
+- Use your mouse to aim and left-click to shoot
+- Press C to cycle through camera indices if needed
+
 **Crosshair not appearing:**
 - Check if webcam is working (press W to see preview)
 - Make sure proper finger gun pose (index out, thumb up, others folded)
-- Improve lighting conditions
+- In mouse mode, the crosshair follows your cursor automatically
 
 **Shooting not working:**
 - Make sure you're holding the finger gun pose
 - Try making a more obvious thumb motion (down then up quickly)
 - Check the green "READY ✓" indicator appears
+- In mouse mode, use left-click to shoot
 
 **Low frame rate:**
 - Close other camera applications

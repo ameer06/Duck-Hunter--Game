@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duck Hunter - Browser Edition</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  body{background:#111;font-family:'Press Start 2P',monospace;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+  #game-container{position:relative;cursor:none}
+  canvas{display:block;border:2px solid #333;border-radius:4px}
+  #ui-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+  #ui-overlay>*{pointer-events:auto}
+  .btn{background:#4a6;font-family:'Press Start 2P',monospace;color:#fff;border:2px solid #6c8;padding:12px 24px;cursor:pointer;font-size:14px;transition:all .15s}
+  .btn:hover{background:#5b7;transform:scale(1.05)}
+  .btn-red{background:#a44;border-color:#c66}
+  .btn-red:hover{background:#b55}
+  #webcam-preview{position:absolute;bottom:10px;right:10px;width:160px;height:120px;border:2px solid #4a6;border-radius:4px;object-fit:cover;transform:scaleX(-1);z-index:10}
+  #hand-status{position:absolute;bottom:140px;right:10px;background:rgba(0,0,0,.8);padding:6px 10px;border-radius:4px;font-size:8px;z-index:10;border:1px solid #444}
+  .ready{color:#4f4}.not-ready{color:#f44}
+  #fps-display{position:absolute;top:5px;right:10px;font-size:8px;color:#888}
+  #mute-indicator{position:absolute;top:5px;left:10px;font-size:8px;color:#888}
+  #menu-screen,#pause-screen,#gameover-screen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:20}
+  #pause-screen,#gameover-screen{display:none}
+  #menu-screen h1{font-size:48px;color:#4f4;text-shadow:3px 3px #000;margin-bottom:10px;letter-spacing:4px}
+  #menu-screen h2{font-size:16px;color:#888;margin-bottom:30px}
+  #menu-screen .controls-guide{font-size:9px;color:#aaa;line-height:2.2;margin-bottom:20px;text-align:center}
+  #menu-screen .leaderboard{font-size:10px;margin-bottom:20px;text-align:center}
+  #menu-screen .leaderboard h3{color:#ff0;margin-bottom:8px;font-size:12px}
+  #menu-screen .leaderboard .entry{margin:4px 0;color:#ccc}
+  .leaderboard .rank1{color:#ffd700}.leaderboard .rank2{color:#c0c0c0}.leaderboard .rank3{color:#cd7f32}
+  #gameover-screen h1{font-size:36px;color:#f44;text-shadow:3px 3px #000;margin-bottom:20px}
+  #gameover-screen .stats{font-size:11px;line-height:2.4;text-align:center;margin-bottom:20px}
+  #gameover-screen .stats span{color:#ff0}
+  #pause-screen h1{font-size:36px;color:#ff0;text-shadow:3px 3px #000;margin-bottom:20px}
+  #pause-screen .stats{font-size:11px;line-height:2.4;text-align:center;margin-bottom:20px}
+  .name-input{background:#222;border:2px solid #4a6;color:#fff;font-family:'Press Start 2P',monospace;padding:8px 12px;font-size:12px;text-align:center;margin-bottom:10px;width:200px}
+  .name-input::placeholder{color:#666}
+  .modal-btns{display:flex;gap:12px;margin-top:10px}
+  #mode-select{display:flex;gap:12px;margin-bottom:20px}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="gameCanvas" width="1280" height="720"></canvas>
+  <div id="ui-overlay">
+    <div id="fps-display">FPS: 0</div>
+    <div id="mute-indicator">M: SOUND ON</div>
+    <div id="hand-status" class="not-ready">FINGER GUN: NOT DETECTED</div>
+    <video id="webcam-preview" autoplay playsinline style="display:none"></video>
+  </div>
+
+  <div id="menu-screen">
+    <h1>DUCK HUNTER</h1>
+    <h2>Browser Edition</h2>
+    <div id="mode-select">
+      <button class="btn" onclick="startWithMode('mouse')">PLAY WITH MOUSE</button>
+      <button class="btn" onclick="startWithMode('hand')" style="background:#46a;border-color:#68c">PLAY WITH HAND TRACKING</button>
+    </div>
+    <div class="controls-guide">
+      MOUSE: Aim + Left Click to Shoot<br>
+      HAND TRACKING: Point finger gun, bend thumb to shoot<br><br>
+      SPACE: Start | P: Pause | M: Mute<br>
+      F: FPS | H: Hitbox | ESC: Menu
+    </div>
+    <div class="leaderboard" id="menu-leaderboard"></div>
+    <div style="font-size:9px;color:#666;margin-top:10px">Press SPACE to start with mouse</div>
+  </div>
+
+  <div id="pause-screen">
+    <h1>PAUSED</h1>
+    <div class="stats" id="pause-stats"></div>
+    <button class="btn" onclick="resumeGame()">RESUME (P)</button>
+    <button class="btn btn-red" onclick="quitToMenu()" style="margin-top:10px">QUIT (ESC)</button>
+  </div>
+
+  <div id="gameover-screen">
+    <h1>GAME OVER</h1>
+    <div class="stats" id="gameover-stats"></div>
+    <input class="name-input" id="name-input" placeholder="YOUR NAME" maxlength="12">
+    <div class="modal-btns">
+      <button class="btn" onclick="saveAndRestart()">SAVE & RESTART (R)</button>
+      <button class="btn btn-red" onclick="quitToMenu()">MENU (ESC)</button>
+    </div>
+    <div class="leaderboard" id="gameover-leaderboard" style="margin-top:15px"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = 1280, H = 720;
+
+let gameState = 'MENU';
+let inputMode = 'mouse';
+let muted = false;
+let showFps = false;
+let showHitbox = false;
+let lastTime = 0, dt = 0, fps = 0, fpsTimer = 0, frameCount = 0;
+let shakeX = 0, shakeY = 0, shakeMag = 0, shakeDuration = 0;
+let comboTimer = 0;
+let leaderboardData = [];
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+  if (muted) return;
+  const now = audioCtx.currentTime;
+  if (type === 'shoot') {
+    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3) * 0.6;
+    }
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.5, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    src.connect(g).connect(audioCtx.destination);
+    src.start(now);
+  } else if (type === 'quack') {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220, now);
+    o.frequency.linearRampToValueAtTime(180, now + 0.1);
+    g.gain.setValueAtTime(0.2, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now);
+    o.stop(now + 0.15);
+  } else if (type === 'hit') {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(600, now);
+    o.frequency.linearRampToValueAtTime(1200, now + 0.05);
+    g.gain.setValueAtTime(0.25, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now);
+    o.stop(now + 0.1);
+  } else if (type === 'levelup') {
+    [0, 0.1, 0.2].forEach((delay, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(440 * (1 + i * 0.25), now + delay);
+      g.gain.setValueAtTime(0.2, now + delay);
+      g.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.15);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(now + delay);
+      o.stop(now + delay + 0.15);
+    });
+  } else if (type === 'reload') {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(300, now);
+    o.frequency.linearRampToValueAtTime(500, now + 0.1);
+    g.gain.setValueAtTime(0.2, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now);
+    o.stop(now + 0.15);
+  }
+}
+
+function drawDuck(x, y, angle, frame, state, flipDir) {
+  ctx.save();
+  ctx.translate(x, y);
+  const dir = flipDir;
+  ctx.scale(dir, 1);
+
+  if (state === 'flying') {
+    ctx.rotate(angle * 0.3);
+  } else if (state === 'falling') {
+    ctx.rotate(frame * 0.15);
+  }
+
+  const wingFlap = state === 'flying' ? Math.sin(frame * 0.3) * 25 : 40;
+  const bobY = state === 'flying' ? Math.sin(frame * 0.1) * 3 : 0;
+
+  ctx.save();
+  ctx.translate(0, bobY);
+
+  // Wing (back)
+  ctx.save();
+  ctx.translate(-5, -5);
+  ctx.rotate((-wingFlap) * Math.PI / 180);
+  ctx.fillStyle = '#5a3a1a';
+  ctx.beginPath();
+  ctx.ellipse(0, -15, 10, 28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Body
+  ctx.fillStyle = '#6b3a1a';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 32, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#5a3010';
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 28, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = '#1a6b3a';
+  ctx.beginPath();
+  ctx.arc(28, -6, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(33, -9, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(34, -9, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Beak
+  ctx.fillStyle = '#da2';
+  ctx.beginPath();
+  ctx.moveTo(40, -6);
+  ctx.lineTo(52, -3);
+  ctx.lineTo(40, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // White neck ring
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(22, -2, 12, -0.8, 0.8);
+  ctx.stroke();
+
+  // Wing (front)
+  ctx.save();
+  ctx.translate(-2, -2);
+  ctx.rotate(wingFlap * Math.PI / 180);
+  ctx.fillStyle = '#7a4a2a';
+  ctx.beginPath();
+  ctx.ellipse(0, -12, 9, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#8a5a3a';
+  ctx.beginPath();
+  ctx.ellipse(2, -10, 6, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Tail
+  ctx.fillStyle = '#4a2a0a';
+  ctx.beginPath();
+  ctx.moveTo(-30, -2);
+  ctx.lineTo(-42, -8);
+  ctx.lineTo(-38, 0);
+  ctx.lineTo(-42, 8);
+  ctx.lineTo(-30, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawBackground() {
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#4a90d9');
+  skyGrad.addColorStop(0.6, '#87ceeb');
+  skyGrad.addColorStop(1, '#b0e0e6');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Sun
+  ctx.fillStyle = '#ffe44d';
+  ctx.shadowColor = '#ffe44d';
+  ctx.shadowBlur = 40;
+  ctx.beginPath();
+  ctx.arc(200, 120, 45, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Clouds
+  drawCloud(300, 80, 1.2);
+  drawCloud(700, 50, 0.8);
+  drawCloud(1050, 100, 1.0);
+
+  // Far hills
+  ctx.fillStyle = '#2d7a2d';
+  ctx.beginPath();
+  ctx.moveTo(0, 480);
+  ctx.quadraticCurveTo(200, 380, 400, 460);
+  ctx.quadraticCurveTo(600, 360, 800, 440);
+  ctx.quadraticCurveTo(1000, 380, 1280, 450);
+  ctx.lineTo(1280, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mid hills
+  ctx.fillStyle = '#3a8a3a';
+  ctx.beginPath();
+  ctx.moveTo(0, 520);
+  ctx.quadraticCurveTo(150, 440, 350, 500);
+  ctx.quadraticCurveTo(500, 430, 700, 490);
+  ctx.quadraticCurveTo(900, 420, 1100, 480);
+  ctx.quadraticCurveTo(1200, 440, 1280, 500);
+  ctx.lineTo(1280, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Back trees
+  drawPineTree(120, 460, 0.6, '#1a5a1a');
+  drawPineTree(350, 470, 0.5, '#1a5a1a');
+  drawPineTree(950, 465, 0.55, '#1a5a1a');
+  drawPineTree(1180, 475, 0.45, '#1a5a1a');
+
+  // Mid trees
+  drawPineTree(50, 510, 0.8, '#267326');
+  drawPineTree(500, 500, 0.9, '#267326');
+  drawPineTree(850, 505, 0.75, '#267326');
+  drawPineTree(1200, 515, 0.7, '#267326');
+
+  // Foreground grass
+  ctx.fillStyle = '#3a8a3a';
+  ctx.fillRect(0, H - 80, W, 80);
+  ctx.fillStyle = '#4a9a4a';
+  ctx.fillRect(0, H - 80, W, 20);
+
+  // Grass detail
+  ctx.strokeStyle = '#5aaa5a';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < W; i += 15) {
+    const gh = 8 + Math.sin(i * 0.1) * 5;
+    ctx.beginPath();
+    ctx.moveTo(i, H - 75);
+    ctx.lineTo(i - 3, H - 75 - gh);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(i + 5, H - 72);
+    ctx.lineTo(i + 8, H - 72 - gh * 0.7);
+    ctx.stroke();
+  }
+}
+
+function drawCloud(x, y, s) {
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.beginPath();
+  ctx.arc(x, y, 25 * s, 0, Math.PI * 2);
+  ctx.arc(x + 20 * s, y - 10 * s, 20 * s, 0, Math.PI * 2);
+  ctx.arc(x + 40 * s, y, 22 * s, 0, Math.PI * 2);
+  ctx.arc(x + 20 * s, y + 5 * s, 18 * s, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawPineTree(x, baseY, s, color) {
+  const h = 80 * s;
+  const w = 30 * s;
+  ctx.fillStyle = '#3a2a10';
+  ctx.fillRect(x - 4 * s, baseY - 20 * s, 8 * s, 25 * s);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, baseY - h);
+  ctx.lineTo(x - w, baseY);
+  ctx.lineTo(x + w, baseY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x, baseY - h * 0.6);
+  ctx.lineTo(x - w * 0.8, baseY - 10 * s);
+  ctx.lineTo(x + w * 0.8, baseY - 10 * s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x, baseY - h * 0.35);
+  ctx.lineTo(x - w * 0.6, baseY - 18 * s);
+  ctx.lineTo(x + w * 0.6, baseY - 18 * s);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Game objects
+let ducks = [];
+let particles = [];
+let floatingTexts = [];
+let streakTexts = [];
+let muzzleFlash = 0;
+let crosshairX = W / 2, crosshairY = H / 2;
+let shootCooldown = 0;
+
+const game = {
+  score: 0, ammo: 10, maxAmmo: 10, level: 1, ducksHit: 0, ducksNeeded: 8,
+  totalShots: 0, totalHits: 0, escaped: 0, streak: 0, bestStreak: 0,
+  combo: 1, comboTimer: 0, spawnTimer: 0, spawnInterval: 120,
+  maxDucks: 2, duckSpeed: 1
+};
+
+const handState = {
+  detected: false, ready: false, trigger: false,
+  prevThumbY: 0, indexExtended: false, thumbUp: false
+};
+
+let handDetector = null;
+let camera = null;
+
+// Duck class
+class Duck {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    this.x = side === -1 ? -50 : W + 50;
+    this.y = 100 + Math.random() * 300;
+    this.dir = side;
+    this.speed = (1.5 + Math.random() * 2) * game.duckSpeed;
+    this.baseY = this.y;
+    this.bobOffset = Math.random() * Math.PI * 2;
+    this.frame = Math.random() * 100;
+    this.alive = true;
+    this.state = 'flying';
+    this.vy = 0;
+    this.vr = 0;
+    this.rotation = 0;
+    this.pattern = ['straight', 'zigzag', 'swoop', 'circular'][Math.floor(Math.random() * 4)];
+    this.patternTimer = 0;
+    this.amplitude = 30 + Math.random() * 50;
+    this.frequency = 0.02 + Math.random() * 0.02;
+    this.swoopDir = Math.random() < 0.5 ? -1 : 1;
+    this.hitRadius = 30;
+  }
+  update() {
+    if (this.state === 'flying') {
+      this.frame++;
+      this.patternTimer += dt;
+      this.x += this.dir * this.speed * dt * 60;
+      switch (this.pattern) {
+        case 'straight':
+          this.y = this.baseY + Math.sin(this.frame * 0.08 + this.bobOffset) * 8;
+          break;
+        case 'zigzag':
+          this.y = this.baseY + Math.sin(this.frame * 0.06 + this.bobOffset) * this.amplitude;
+          break;
+        case 'swoop':
+          this.y = this.baseY + Math.sin(this.patternTimer * 0.8) * this.amplitude * this.swoopDir;
+          this.x += Math.cos(this.patternTimer * 0.8) * 0.5 * this.dir;
+          break;
+        case 'circular':
+          this.y = this.baseY + Math.sin(this.patternTimer * 1.5) * this.amplitude * 0.6;
+          this.baseY += Math.cos(this.patternTimer * 1.5) * 0.3;
+          break;
+      }
+      if (this.y < 40) this.y = 40;
+      if (this.y > 500) this.y = 500;
+      if ((this.dir === 1 && this.x > W + 80) || (this.dir === -1 && this.x < -80)) {
+        this.alive = false;
+        game.escaped++;
+        if (game.streak > 0) {
+          game.streak = 0;
+          game.combo = 1;
+        }
+      }
+    } else if (this.state === 'falling') {
+      this.vy += 0.4;
+      this.y += this.vy;
+      this.x += this.dir * 0.5;
+      this.rotation += this.vr;
+      this.frame++;
+      if (this.y > H - 60) {
+        this.alive = false;
+      }
+    }
+  }
+  draw() {
+    drawDuck(this.x, this.y, this.rotation, this.frame, this.state, this.dir);
+  }
+  hit() {
+    this.state = 'falling';
+    this.vy = -3;
+    this.vr = 0.15 * this.dir;
+  }
+}
+
+// Particle class
+class Particle {
+  constructor(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.vx = (Math.random() - 0.5) * 6;
+    this.vy = -Math.random() * 4 - 1;
+    this.life = 1;
+    this.decay = 0.01 + Math.random() * 0.02;
+    this.size = 2 + Math.random() * 4;
+  }
+  update() {
+    this.vy += 0.1;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.decay;
+  }
+  draw() {
+    ctx.globalAlpha = this.life;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+class FloatingText {
+  constructor(x, y, text, color, size) {
+    this.x = x;
+    this.y = y;
+    this.text = text;
+    this.color = color;
+    this.size = size || 14;
+    this.life = 1;
+    this.vy = -1.5;
+  }
+  update() {
+    this.y += this.vy;
+    this.life -= 0.015;
+  }
+  draw() {
+    ctx.globalAlpha = this.life;
+    ctx.fillStyle = this.color;
+    ctx.font = `${this.size}px "Press Start 2P"`;
+    ctx.textAlign = 'center';
+    ctx.fillText(this.text, this.x, this.y);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function spawnDuck() {
+  if (ducks.filter(d => d.state === 'flying').length < game.maxDucks) {
+    ducks.push(new Duck());
+  }
+}
+
+function shoot() {
+  if (game.ammo <= 0 || shootCooldown > 0) return;
+  game.ammo--;
+  game.totalShots++;
+  shootCooldown = 12;
+  muzzleFlash = 6;
+  playSound('shoot');
+
+  let hit = false;
+  for (let d of ducks) {
+    if (d.state !== 'flying') continue;
+    const dx = crosshairX - d.x;
+    const dy = crosshairY - d.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 180) {
+      hit = true;
+      d.hit();
+      game.totalHits++;
+      game.streak++;
+      if (game.streak > game.bestStreak) game.bestStreak = game.streak;
+      game.comboTimer = 4;
+
+      let points = 100;
+      if (game.streak >= 5) game.combo = 2;
+      else if (game.streak >= 3) game.combo = 1.5;
+      else game.combo = 1;
+
+      points = Math.floor(points * game.combo);
+      game.score += points;
+      game.ducksHit++;
+
+      playSound('hit');
+      spawnFeathers(d.x, d.y);
+      floatingTexts.push(new FloatingText(d.x, d.y - 20, `+${points}`, '#ff0', 16));
+
+      if (game.streak === 2) streakTexts.push(new FloatingText(W / 2, H / 2 - 50, 'DOUBLE KILL!', '#f80', 20));
+      else if (game.streak === 3) streakTexts.push(new FloatingText(W / 2, H / 2 - 50, 'TRIPLE KILL!', '#f44', 24));
+      else if (game.streak === 4) streakTexts.push(new FloatingText(W / 2, H / 2 - 50, 'QUAD KILL!', '#f0f', 28));
+      else if (game.streak >= 5) streakTexts.push(new FloatingText(W / 2, H / 2 - 50, `${game.streak}x KILLING SPREE!`, '#f00', 30));
+
+      if (game.ducksHit >= game.ducksNeeded) {
+        levelUp();
+      }
+      break;
+    }
+  }
+  if (!hit) {
+    shakeMag = 4;
+    shakeDuration = 8;
+    playSound('quack');
+  }
+}
+
+function spawnFeathers(x, y) {
+  const colors = ['#6b3a1a', '#5a3010', '#1a6b3a', '#7a4a2a', '#4a2a0a'];
+  for (let i = 0; i < 12; i++) {
+    particles.push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
+  }
+}
+
+function levelUp() {
+  game.level++;
+  game.ducksHit = 0;
+  game.duckSpeed = Math.min(game.duckSpeed + 0.3, 3);
+  game.maxDucks = Math.min(2 + Math.floor(game.level / 2), 6);
+  game.spawnInterval = Math.max(30, 120 - game.level * 10);
+  game.ammo = Math.min(game.ammo + 5, 20);
+  game.maxAmmo = Math.max(game.maxAmmo, game.ammo);
+  playSound('levelup');
+  streakTexts.push(new FloatingText(W / 2, H / 2 - 80, `LEVEL ${game.level}!`, '#0f0', 32));
+  streakTexts.push(new FloatingText(W / 2, H / 2 - 40, '+5 AMMO', '#ff0', 18));
+}
+
+function drawHUD() {
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, 50);
+
+  ctx.font = '11px "Press Start 2P"';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(`SCORE: ${game.score}`, 15, 20);
+  ctx.fillStyle = game.ammo <= 3 ? '#f44' : '#fff';
+  ctx.fillText(`AMMO: ${game.ammo}/${game.maxAmmo}`, 15, 40);
+
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  const acc = game.totalShots > 0 ? Math.round(game.totalHits / game.totalShots * 100) : 0;
+  ctx.fillText(`ACC: ${acc}%`, 300, 20);
+  ctx.fillText(`ESCAPED: ${game.escaped}`, 300, 40);
+
+  ctx.fillText(`LEVEL ${game.level}`, 550, 20);
+  const progress = `${game.ducksHit}/${game.ducksNeeded}`;
+  ctx.fillText(progress, 550, 40);
+
+  // Progress bar
+  ctx.fillStyle = '#333';
+  ctx.fillRect(620, 30, 100, 12);
+  ctx.fillStyle = '#4f4';
+  ctx.fillRect(620, 30, (game.ducksHit / game.ducksNeeded) * 100, 12);
+
+  const activeDucks = ducks.filter(d => d.state === 'flying').length;
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'right';
+  ctx.fillText(`DUCKS: ${activeDucks}`, W - 15, 20);
+  ctx.fillText(`STREAK: ${game.streak} (BEST: ${game.bestStreak})`, W - 15, 40);
+
+  if (game.combo > 1) {
+    ctx.fillStyle = '#ff0';
+    ctx.textAlign = 'center';
+    ctx.font = '16px "Press Start 2P"';
+    ctx.fillText(`COMBO x${game.combo}`, W / 2, 80);
+  }
+
+  // Bottom keybind hints
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, H - 25, W, 25);
+  ctx.font = '8px "Press Start 2P"';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#888';
+  ctx.fillText('P: Pause | M: Mute | F: FPS | H: Hitbox | ESC: Menu', W / 2, H - 10);
+}
+
+function drawCrosshair() {
+  ctx.strokeStyle = '#f00';
+  ctx.lineWidth = 2;
+  const r = 18;
+  ctx.beginPath();
+  ctx.arc(crosshairX, crosshairY, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(crosshairX - r - 8, crosshairY);
+  ctx.lineTo(crosshairX - 5, crosshairY);
+  ctx.moveTo(crosshairX + 5, crosshairY);
+  ctx.lineTo(crosshairX + r + 8, crosshairY);
+  ctx.moveTo(crosshairX, crosshairY - r - 8);
+  ctx.lineTo(crosshairX, crosshairY - 5);
+  ctx.moveTo(crosshairX, crosshairY + 5);
+  ctx.lineTo(crosshairX, crosshairY + r + 8);
+  ctx.stroke();
+  ctx.fillStyle = '#f00';
+  ctx.beginPath();
+  ctx.arc(crosshairX, crosshairY, 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawMuzzleFlash() {
+  if (muzzleFlash > 0) {
+    ctx.fillStyle = `rgba(255,200,50,${muzzleFlash / 6 * 0.8})`;
+    ctx.beginPath();
+    ctx.arc(crosshairX + 30, crosshairY + 40, 20 + muzzleFlash * 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,200,${muzzleFlash / 6 * 0.9})`;
+    ctx.beginPath();
+    ctx.arc(crosshairX + 30, crosshairY + 40, 10 + muzzleFlash * 2, 0, Math.PI * 2);
+    ctx.fill();
+    muzzleFlash--;
+  }
+}
+
+function drawHitboxes() {
+  if (!showHitbox) return;
+  ctx.strokeStyle = 'rgba(255,0,0,0.5)';
+  ctx.lineWidth = 1;
+  for (let d of ducks) {
+    if (d.state === 'flying') {
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, 180, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,0,0,0.1)';
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.hitRadius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function updateGame() {
+  if (gameState !== 'PLAYING') return;
+
+  shootCooldown--;
+  game.spawnTimer++;
+  if (game.spawnTimer >= game.spawnInterval) {
+    game.spawnTimer = 0;
+    spawnDuck();
+  }
+
+  if (game.comboTimer > 0) {
+    game.comboTimer -= dt;
+    if (game.comboTimer <= 0) {
+      game.combo = 1;
+    }
+  }
+
+  ducks.forEach(d => d.update());
+  ducks = ducks.filter(d => d.alive);
+  particles.forEach(p => p.update());
+  particles = particles.filter(p => p.life > 0);
+  floatingTexts.forEach(t => t.update());
+  floatingTexts = floatingTexts.filter(t => t.life > 0);
+  streakTexts.forEach(t => t.update());
+  streakTexts = streakTexts.filter(t => t.life > 0);
+
+  if (shakeDuration > 0) {
+    shakeX = (Math.random() - 0.5) * shakeMag;
+    shakeY = (Math.random() - 0.5) * shakeMag;
+    shakeMag *= 0.9;
+    shakeDuration--;
+  } else {
+    shakeX = 0;
+    shakeY = 0;
+  }
+
+  if (game.ammo <= 0 && ducks.filter(d => d.state === 'flying').length === 0) {
+    gameState = 'GAME_OVER';
+    showGameOver();
+  }
+}
+
+function render() {
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  drawBackground();
+
+  ducks.forEach(d => d.draw());
+  particles.forEach(p => p.draw());
+  floatingTexts.forEach(t => t.draw());
+  streakTexts.forEach(t => t.draw());
+
+  drawMuzzleFlash();
+  drawHitboxes();
+  drawHUD();
+  drawCrosshair();
+
+  ctx.restore();
+}
+
+function showGameOver() {
+  document.getElementById('gameover-screen').style.display = 'flex';
+  document.getElementById('gameover-stats').innerHTML =
+    `SCORE: <span>${game.score}</span><br>` +
+    `LEVEL: <span>${game.level}</span><br>` +
+    `DUCKS HIT: <span>${game.totalHits}</span><br>` +
+    `ACCURACY: <span>${game.totalShots > 0 ? Math.round(game.totalHits / game.totalShots * 100) : 0}%</span><br>` +
+    `ESCAPED: <span>${game.escaped}</span><br>` +
+    `BEST STREAK: <span>${game.bestStreak}</span>`;
+  loadLeaderboard('gameover-leaderboard');
+}
+
+function showPause() {
+  document.getElementById('pause-screen').style.display = 'flex';
+  document.getElementById('pause-stats').innerHTML =
+    `SCORE: <span>${game.score}</span> | LEVEL: <span>${game.level}</span><br>` +
+    `AMMO: <span>${game.ammo}</span> | HIT: <span>${game.totalHits}</span>`;
+}
+
+function resumeGame() {
+  gameState = 'PLAYING';
+  document.getElementById('pause-screen').style.display = 'none';
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function resetGame() {
+  ducks = [];
+  particles = [];
+  floatingTexts = [];
+  streakTexts = [];
+  muzzleFlash = 0;
+  shootCooldown = 0;
+  game.score = 0;
+  game.ammo = 10;
+  game.maxAmmo = 10;
+  game.level = 1;
+  game.ducksHit = 0;
+  game.ducksNeeded = 8;
+  game.totalShots = 0;
+  game.totalHits = 0;
+  game.escaped = 0;
+  game.streak = 0;
+  game.bestStreak = 0;
+  game.combo = 1;
+  game.comboTimer = 0;
+  game.spawnTimer = 0;
+  game.spawnInterval = 120;
+  game.maxDucks = 2;
+  game.duckSpeed = 1;
+}
+
+function startGame() {
+  resetGame();
+  gameState = 'PLAYING';
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('pause-screen').style.display = 'none';
+  document.getElementById('gameover-screen').style.display = 'none';
+  document.getElementById('hand-status').style.display = inputMode === 'hand' ? 'block' : 'none';
+  document.getElementById('webcam-preview').style.display = inputMode === 'hand' ? 'block' : 'none';
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  spawnDuck();
+}
+
+function quitToMenu() {
+  gameState = 'MENU';
+  document.getElementById('menu-screen').style.display = 'flex';
+  document.getElementById('pause-screen').style.display = 'none';
+  document.getElementById('gameover-screen').style.display = 'none';
+  loadLeaderboard('menu-leaderboard');
+}
+
+function saveAndRestart() {
+  const nameInput = document.getElementById('name-input');
+  const name = nameInput.value.trim() || 'ANON';
+  if (game.score > 0) {
+    submitScore(name, game.score);
+  }
+  startGame();
+}
+
+// Leaderboard API
+async function loadLeaderboard(elementId) {
+  try {
+    const res = await fetch('/api/scores');
+    const data = await res.json();
+    leaderboardData = data;
+    let html = '<h3>TOP 5</h3>';
+    if (data.length === 0) {
+      html += '<div class="entry">No scores yet</div>';
+    } else {
+      data.slice(0, 5).forEach((entry, i) => {
+        const rankClass = i === 0 ? 'rank1' : i === 1 ? 'rank2' : i === 2 ? 'rank3' : '';
+        html += `<div class="entry ${rankClass}">${i + 1}. ${entry.name} - ${entry.score}</div>`;
+      });
+    }
+    document.getElementById(elementId).innerHTML = html;
+  } catch (e) {
+    document.getElementById(elementId).innerHTML = '<div style="color:#666;font-size:9px">Leaderboard unavailable</div>';
+  }
+}
+
+async function submitScore(name, score) {
+  try {
+    await fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, score })
+    });
+  } catch (e) {}
+}
+
+// Input - Mouse
+let mouseDown = false;
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  crosshairX = (e.clientX - rect.left) * scaleX;
+  crosshairY = (e.clientY - rect.top) * scaleY;
+});
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) {
+    mouseDown = true;
+    if (inputMode === 'mouse' && gameState === 'PLAYING') shoot();
+  }
+});
+canvas.addEventListener('mouseup', () => { mouseDown = false; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  const key = e.key.toLowerCase();
+  if (gameState === 'MENU') {
+    if (key === ' ') { startWithMode(inputMode); e.preventDefault(); }
+    if (key === 'y') startWithMode(inputMode);
+    if (key === 'n') quitToMenu();
+  } else if (gameState === 'PLAYING') {
+    if (key === 'p') { gameState = 'PAUSED'; showPause(); }
+    if (key === 'm') { muted = !muted; document.getElementById('mute-indicator').textContent = muted ? 'M: MUTED' : 'M: SOUND ON'; }
+    if (key === 'f') showFps = !showFps;
+    if (key === 'h') showHitbox = !showHitbox;
+    if (key === 'escape') quitToMenu();
+    if (key === 'arrowup') audioCtx.volume = Math.min(1, audioCtx.volume + 0.1);
+    if (key === 'arrowdown') audioCtx.volume = Math.max(0, audioCtx.volume - 0.1);
+  } else if (gameState === 'PAUSED') {
+    if (key === 'p' || key === 'escape') resumeGame();
+  } else if (gameState === 'GAME_OVER') {
+    if (key === 'r') saveAndRestart();
+    if (key === 'escape' || key === 'm') quitToMenu();
+  }
+});
+
+// Hand tracking
+async function initHandTracking() {
+  const video = document.getElementById('webcam-preview');
+  const statusEl = document.getElementById('hand-status');
+
+  try {
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5
+    });
+    hands.onResults(results => {
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        processHandLandmarks(landmarks);
+      } else {
+        handState.detected = false;
+        handState.ready = false;
+        statusEl.className = 'not-ready';
+        statusEl.textContent = 'FINGER GUN: NOT DETECTED';
+      }
+    });
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+    video.srcObject = stream;
+    video.style.display = 'block';
+
+    camera = new Camera(video, {
+      onFrame: async () => {
+        await hands.send({ image: video });
+      },
+      width: 320,
+      height: 240
+    });
+    camera.start();
+    handDetector = hands;
+    return true;
+  } catch (e) {
+    console.log('Hand tracking unavailable:', e);
+    statusEl.textContent = 'CAMERA UNAVAILABLE';
+    return false;
+  }
+}
+
+function processHandLandmarks(landmarks) {
+  const statusEl = document.getElementById('hand-status');
+  handState.detected = true;
+
+  const indexTip = landmarks[8];
+  const indexMcp = landmarks[5];
+  const thumbTip = landmarks[4];
+  const thumbIp = landmarks[3];
+  const middleTip = landmarks[12];
+  const middleMcp = landmarks[9];
+  const ringTip = landmarks[16];
+  const ringMcp = landmarks[13];
+  const pinkyTip = landmarks[20];
+  const pinkyMcp = landmarks[17];
+
+  const indexExtended = indexTip.y < indexMcp.y - 0.05;
+  const middleCurled = middleTip.y > middleMcp.y - 0.02;
+  const ringCurled = ringTip.y > ringMcp.y - 0.02;
+  const pinkyCurled = pinkyTip.y > pinkyMcp.y - 0.02;
+  const thumbUp = thumbTip.y < thumbIp.y - 0.03;
+
+  handState.indexExtended = indexExtended;
+  handState.thumbUp = thumbUp;
+
+  if (indexExtended && middleCurled && ringCurled && pinkyCurled) {
+    handState.ready = true;
+    statusEl.className = 'ready';
+    statusEl.textContent = 'FINGER GUN: READY';
+
+    crosshairX = (1 - indexTip.x) * W;
+    crosshairY = indexTip.y * H;
+
+    const triggerDown = thumbTip.y > thumbIp.y + 0.02;
+    if (triggerDown && !handState.trigger && gameState === 'PLAYING') {
+      shoot();
+    }
+    handState.trigger = triggerDown;
+  } else {
+    handState.ready = false;
+    handState.trigger = false;
+    statusEl.className = 'not-ready';
+    statusEl.textContent = 'FINGER GUN: DETECT (Point + curl)';
+  }
+}
+
+// Mode selection
+async function startWithMode(mode) {
+  inputMode = mode;
+  if (mode === 'hand') {
+    if (!handDetector) {
+      const ok = await initHandTracking();
+      if (!ok) {
+        inputMode = 'mouse';
+        document.getElementById('hand-status').style.display = 'none';
+        document.getElementById('webcam-preview').style.display = 'none';
+      }
+    }
+  }
+  startGame();
+}
+
+// Main loop
+function gameLoop(timestamp) {
+  dt = Math.min((timestamp - lastTime) / 16.667, 3);
+  lastTime = timestamp;
+  frameCount++;
+  fpsTimer += dt * 16.667;
+  if (fpsTimer >= 1000) {
+    fps = frameCount;
+    frameCount = 0;
+    fpsTimer = 0;
+    if (showFps) document.getElementById('fps-display').textContent = `FPS: ${fps}`;
+    else document.getElementById('fps-display').textContent = '';
+  }
+
+  if (gameState === 'PLAYING') {
+    updateGame();
+    render();
+  } else if (gameState === 'MENU' || gameState === 'GAME_OVER') {
+    drawBackground();
+  } else if (gameState === 'PAUSED') {
+    render();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+loadLeaderboard('menu-leaderboard');
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

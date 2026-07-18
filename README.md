@@ -24,13 +24,22 @@ Install with: `pip install -r requirements.txt`
 
 ## Running the Game
 
-**Easy way:**
+**Desktop version (original):**
+
+Easy way:
 - Just double-click `RUN_GAME.bat`
 
-**Or from terminal:**
+Or from terminal:
 ```
 python main.py
 ```
+
+**Web version (Flask):**
+```
+pip install flask
+python app.py
+```
+Then open `http://localhost:5000` in your browser. Works with webcam or mouse!
 
 ## Controls
 - **Hand Gesture**: Make finger gun pose to aim
@@ -80,10 +89,13 @@ python main.py
 ## Project Structure
 ```
 duck hunter/
-├── main.py                  # Main game loop
+├── main.py                  # Main game loop (desktop)
+├── app.py                   # Flask web server
+├── templates/
+│   └── index.html           # Browser game (Canvas + MediaPipe JS)
 ├── hand_gesture.py          # Hand detection logic
 ├── game_engine.py           # Duck behavior, scoring, and levels
-├── highscore.py             # High score persistence
+├── highscore.py             # High score persistence (desktop)
 ├── generate_assets.py       # Creates fallback game assets
 ├── requirements.txt         # Dependencies
 ├── RUN_GAME.bat             # One-click launcher (Windows)

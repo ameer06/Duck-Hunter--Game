@@ -87,8 +87,7 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js" crossorigin="anonymous"></script>
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -408,7 +407,6 @@ const handState = {
 };
 
 let handDetector = null;
-let camera = null;
 
 // Duck class
 class Duck {
@@ -419,7 +417,7 @@ class Duck {
     const side = Math.random() < 0.5 ? -1 : 1;
     this.x = side === -1 ? -50 : W + 50;
     this.y = 100 + Math.random() * 300;
-    this.dir = side;
+    this.dir = side === -1 ? 1 : -1;  // move INTO the screen
     this.speed = (1.5 + Math.random() * 2) * game.duckSpeed;
     this.baseY = this.y;
     this.bobOffset = Math.random() * Math.PI * 2;
@@ -936,45 +934,55 @@ document.addEventListener('keydown', e => {
 });
 
 // Hand tracking
+let handLandmarker = null;
+let webcamStream = null;
+
 async function initHandTracking() {
   const video = document.getElementById('webcam-preview');
   const statusEl = document.getElementById('hand-status');
 
   try {
-    const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
+    const vision = await window.FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
+    );
+    handLandmarker = await window.HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+        delegate: 'GPU'
+      },
+      runningMode: 'VIDEO',
+      numHands: 1,
+      minHandDetectionConfidence: 0.5,
+      minHandPresenceConfidence: 0.5,
       minTrackingConfidence: 0.5
     });
-    hands.onResults(results => {
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmarks = results.multiHandLandmarks[0];
-        processHandLandmarks(landmarks);
-      } else {
-        handState.detected = false;
-        handState.ready = false;
-        statusEl.className = 'not-ready';
-        statusEl.textContent = 'FINGER GUN: NOT DETECTED';
-      }
-    });
 
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-    video.srcObject = stream;
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+    video.srcObject = webcamStream;
     video.style.display = 'block';
+    await video.play();
 
-    camera = new Camera(video, {
-      onFrame: async () => {
-        await hands.send({ image: video });
-      },
-      width: 320,
-      height: 240
-    });
-    camera.start();
-    handDetector = hands;
+    // Start detection loop
+    function detectFrame() {
+      if (!handLandmarker || video.readyState < 2) {
+        requestAnimationFrame(detectFrame);
+        return;
+      }
+      try {
+        const results = handLandmarker.detectForVideo(video, performance.now());
+        if (results.landmarks && results.landmarks.length > 0) {
+          processHandLandmarks(results.landmarks[0]);
+        } else {
+          handState.detected = false;
+          handState.ready = false;
+          statusEl.className = 'not-ready';
+          statusEl.textContent = 'FINGER GUN: NOT DETECTED';
+        }
+      } catch (e) {}
+      requestAnimationFrame(detectFrame);
+    }
+    detectFrame();
+
     return true;
   } catch (e) {
     console.log('Hand tracking unavailable:', e);
@@ -1032,7 +1040,7 @@ function processHandLandmarks(landmarks) {
 async function startWithMode(mode) {
   inputMode = mode;
   if (mode === 'hand') {
-    if (!handDetector) {
+    if (!handLandmarker) {
       const ok = await initHandTracking();
       if (!ok) {
         inputMode = 'mouse';

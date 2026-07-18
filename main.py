@@ -597,8 +597,21 @@ class FingerGunDuckHunter:
                         print(f"❌ MISS! Ammo: {self.game_engine.ammo}")
             else:
                 debug_frame = None
-                aim_pos = None
-                is_finger_gun = False
+                # Mouse fallback when no camera
+                if self.camera is None and self.game_engine.state == GameState.PLAYING:
+                    aim_pos = pygame.mouse.get_pos()
+                    is_finger_gun = True
+                    trigger_pulled = False
+                    # Check for mouse click to shoot
+                    mouse_buttons = pygame.mouse.get_pressed()
+                    if mouse_buttons[0]:
+                        hit = self.game_engine.shoot(aim_pos[0], aim_pos[1])
+                        if self.gunshot_sound:
+                            self.gunshot_sound.play()
+                        self.shake_intensity = 8 if hit else 4
+                else:
+                    aim_pos = None
+                    is_finger_gun = False
             
             # Update game logic (skips if paused internally)
             self.game_engine.update()
@@ -620,7 +633,7 @@ class FingerGunDuckHunter:
             self.game_engine.draw_ui(self.screen, self.font)
             
             # Crosshair (with recoil)
-            if aim_pos and is_finger_gun:
+            if aim_pos and (is_finger_gun or self.camera is None):
                 recoil = self.game_engine.recoil_offset if self.game_engine.recoil_active else (0, 0)
                 self.draw_crosshair(aim_pos, recoil)
             
@@ -665,11 +678,17 @@ class FingerGunDuckHunter:
             if self.game_engine.state == GameState.MENU:
                 self.draw_menu_screen()
             
-            # Camera not available warning
+            # Camera not available warning (only show briefly)
             if self.camera is None and self.game_engine.state == GameState.PLAYING:
-                warn = self.warn_font.render("No camera detected - use mouse fallback", True, (255, 200, 50))
-                warn_rect = warn.get_rect(center=(self.SCREEN_WIDTH // 2, 50))
-                self.screen.blit(warn, warn_rect)
+                if not hasattr(self, '_cam_warn_shown'):
+                    self._cam_warn_shown = True
+                    self._cam_warn_time = pygame.time.get_ticks()
+                if pygame.time.get_ticks() - self._cam_warn_time < 3000:
+                    warn = self.warn_font.render("No camera - using mouse fallback (click to shoot)", True, (255, 200, 50))
+                    warn_rect = warn.get_rect(center=(self.SCREEN_WIDTH // 2, 50))
+                    self.screen.blit(warn, warn_rect)
+            elif self.camera is not None:
+                self._cam_warn_shown = False
 
             # Volume indicator
             if self._volume_timer > 0 and pygame.time.get_ticks() - self._volume_timer < 1200:

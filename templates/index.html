@@ -87,7 +87,7 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js" crossorigin="anonymous" onerror="console.log('MediaPipe CDN failed to load')"></script>
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -438,7 +438,7 @@ class Duck {
     if (this.state === 'flying') {
       this.frame++;
       this.patternTimer += dt;
-      this.x += this.dir * this.speed * dt * 60;
+      this.x += this.dir * this.speed * dt;
       switch (this.pattern) {
         case 'straight':
           this.y = this.baseY + Math.sin(this.frame * 0.08 + this.bobOffset) * 8;
@@ -873,7 +873,7 @@ async function loadLeaderboard(elementId) {
     } else {
       data.slice(0, 5).forEach((entry, i) => {
         const rankClass = i === 0 ? 'rank1' : i === 1 ? 'rank2' : i === 2 ? 'rank3' : '';
-        html += `<div class="entry ${rankClass}">${i + 1}. ${entry.name} - ${entry.score}</div>`;
+        html += `<div class="entry ${rankClass}">${i + 1}. ${entry.name} - ${entry.score} (${entry.accuracy || 0}%)</div>`;
       });
     }
     document.getElementById(elementId).innerHTML = html;
@@ -884,10 +884,11 @@ async function loadLeaderboard(elementId) {
 
 async function submitScore(name, score) {
   try {
+    const accuracy = game.totalShots > 0 ? Math.round(game.totalHits / game.totalShots * 100) : 0;
     await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, score })
+      body: JSON.stringify({ name, score, accuracy, ducks: game.totalHits })
     });
   } catch (e) {}
 }
@@ -936,10 +937,32 @@ document.addEventListener('keydown', e => {
 // Hand tracking
 let handLandmarker = null;
 let webcamStream = null;
+let handTrackingReady = false;
 
 async function initHandTracking() {
   const video = document.getElementById('webcam-preview');
   const statusEl = document.getElementById('hand-status');
+
+  // First, try to get webcam access
+  try {
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+    video.srcObject = webcamStream;
+    video.style.display = 'block';
+    await video.play();
+  } catch (e) {
+    console.log('Camera access denied:', e);
+    statusEl.textContent = 'CAMERA ACCESS DENIED';
+    return false;
+  }
+
+  // Then try to load MediaPipe for hand detection
+  if (typeof window.FilesetResolver === 'undefined' || typeof window.HandLandmarker === 'undefined') {
+    console.log('MediaPipe not loaded, using camera only');
+    statusEl.textContent = 'CAMERA ONLY (MediaPipe unavailable)';
+    statusEl.className = 'not-ready';
+    handTrackingReady = false;
+    return true; // camera works, just no hand detection
+  }
 
   try {
     const vision = await window.FilesetResolver.forVisionTasks(
@@ -956,11 +979,8 @@ async function initHandTracking() {
       minHandPresenceConfidence: 0.5,
       minTrackingConfidence: 0.5
     });
-
-    webcamStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
-    video.srcObject = webcamStream;
-    video.style.display = 'block';
-    await video.play();
+    handTrackingReady = true;
+    statusEl.textContent = 'HAND TRACKING READY';
 
     // Start detection loop
     function detectFrame() {
@@ -982,12 +1002,12 @@ async function initHandTracking() {
       requestAnimationFrame(detectFrame);
     }
     detectFrame();
-
     return true;
   } catch (e) {
-    console.log('Hand tracking unavailable:', e);
-    statusEl.textContent = 'CAMERA UNAVAILABLE';
-    return false;
+    console.log('MediaPipe init failed:', e);
+    statusEl.textContent = 'CAMERA ONLY (hand detection failed)';
+    handTrackingReady = false;
+    return true; // still have camera
   }
 }
 

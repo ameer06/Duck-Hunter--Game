@@ -41,6 +41,20 @@ python app.py
 ```
 Then open `http://localhost:5000` in your browser. Works with webcam or mouse!
 
+**Deploy web version online:**
+```
+# Render.com (free)
+# 1. Push to GitHub
+# 2. Connect repo on render.com
+# 3. Build: pip install -r requirements.txt
+# 4. Start: gunicorn app:app
+
+# Railway.app
+# 1. Push to GitHub
+# 2. Connect repo on railway.app
+# 3. Auto-detects Python and Procfile
+```
+
 ## Controls
 - **Hand Gesture**: Make finger gun pose to aim
 - **Thumb Motion**: Quick down-up motion to shoot

@@ -795,9 +795,12 @@ function showGameOver() {
 
 function showPause() {
   document.getElementById('pause-screen').style.display = 'flex';
+  const accuracy = game.totalShots > 0 ? Math.round(game.totalHits / game.totalShots * 100) : 0;
   document.getElementById('pause-stats').innerHTML =
     `SCORE: <span>${game.score}</span> | LEVEL: <span>${game.level}</span><br>` +
-    `AMMO: <span>${game.ammo}</span> | HIT: <span>${game.totalHits}</span>`;
+    `AMMO: <span>${game.ammo}/${game.maxAmmo}</span> | HIT: <span>${game.totalHits}</span><br>` +
+    `ACCURACY: <span>${accuracy}%</span> | ESCAPED: <span>${game.escaped}</span><br>` +
+    `STREAK: <span>${game.streak}</span> | BEST: <span>${game.bestStreak}</span>`;
 }
 
 function resumeGame() {

@@ -624,8 +624,14 @@ function drawHUD() {
   ctx.textAlign = 'left';
   ctx.fillStyle = '#fff';
   ctx.fillText(`SCORE: ${game.score}`, 15, 20);
-  ctx.fillStyle = game.ammo <= 3 ? '#f44' : '#fff';
+  const ammoFlash = game.ammo <= 3 && Math.floor(Date.now() / 300) % 2 === 0;
+  ctx.fillStyle = ammoFlash ? '#f00' : (game.ammo <= 3 ? '#f44' : '#fff');
   ctx.fillText(`AMMO: ${game.ammo}/${game.maxAmmo}`, 15, 40);
+
+  ctx.fillStyle = '#333';
+  ctx.fillRect(12, 43, 100, 6);
+  ctx.fillStyle = ammoFlash ? '#f00' : (game.ammo <= 3 ? '#f44' : '#4f4');
+  ctx.fillRect(12, 43, (game.ammo / game.maxAmmo) * 100, 6);
 
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
@@ -783,11 +789,16 @@ function render() {
 
 function showGameOver() {
   document.getElementById('gameover-screen').style.display = 'flex';
+  const accuracy = game.totalShots > 0 ? Math.round(game.totalHits / game.totalShots * 100) : 0;
+  const highScore = leaderboardData.length > 0 ? leaderboardData[0].score : 0;
+  const isNewHigh = game.score > 0 && game.score >= highScore;
   document.getElementById('gameover-stats').innerHTML =
+    (isNewHigh ? '<div style="color:#ff0;font-size:16px;margin-bottom:10px">NEW HIGH SCORE!</div>' : '') +
     `SCORE: <span>${game.score}</span><br>` +
     `LEVEL: <span>${game.level}</span><br>` +
+    `AMMO LEFT: <span>${game.ammo}/${game.maxAmmo}</span><br>` +
     `DUCKS HIT: <span>${game.totalHits}</span><br>` +
-    `ACCURACY: <span>${game.totalShots > 0 ? Math.round(game.totalHits / game.totalShots * 100) : 0}%</span><br>` +
+    `ACCURACY: <span>${accuracy}%</span><br>` +
     `ESCAPED: <span>${game.escaped}</span><br>` +
     `BEST STREAK: <span>${game.bestStreak}</span>`;
   loadLeaderboard('gameover-leaderboard');
